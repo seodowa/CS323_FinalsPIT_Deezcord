@@ -3,6 +3,16 @@ const router = express.Router();
 const supabase = require('../config/supabaseClient'); // Import the DB
 const verifyUser = require('../middleware/authMiddleware'); // Import the bouncer
 
+
+// Add input validation helper
+const validateRoomName = (name) => {
+  if (typeof name !== 'string') return false;
+  if (name.trim().length === 0) return false;
+  if (name.length > 100) return false;
+  return true;
+};
+
+
 // GET /rooms/:roomId/messages - Fetch message history (PROTECTED)
 router.get('/:roomId/messages', verifyUser, async (req, res) => {
   const { roomId } = req.params;
@@ -18,11 +28,13 @@ router.get('/:roomId/messages', verifyUser, async (req, res) => {
 });
 
 // POST /rooms/create - Create a new chat room (PROTECTED)
-router.post('/create', verifyUser, async (req, res) => {
+router.post('/', verifyUser, async (req, res) => {
   const { name } = req.body;
 
   if (!name) {
     return res.status(400).json({ error: "Room name is required" });
+  } else if (!validateRoomName(name)) {
+    return res.status(400).json({ error: "Room name must be 1-100 characters" });
   }
 
   const { data, error } = await supabase

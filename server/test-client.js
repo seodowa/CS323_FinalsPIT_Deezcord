@@ -7,7 +7,7 @@ const TEST_ROOM = "1e325f0a-63db-4724-af77-ea3a4445aadd"; // Use a valid UUID fr
 
 socket.on("connect", () => {
   console.log(`[+] Connected to server with ID: ${socket.id}`);
-  
+    
   // 1. Join the room
   socket.emit("join_room", TEST_ROOM);
   console.log(`[+] Emitted join_room for: ${TEST_ROOM}`);

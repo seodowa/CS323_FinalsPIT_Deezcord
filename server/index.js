@@ -19,6 +19,11 @@ app.use('/auth', authRoutes);
 app.use('/health', healthRoutes);
 app.use('/rooms', roomRoutes);
 
+// Redirect root to /rooms
+app.get('/', (req, res) => {
+  res.redirect('/rooms');
+});
+
 const server = http.createServer(app);
 
 const io = new Server(server, {
