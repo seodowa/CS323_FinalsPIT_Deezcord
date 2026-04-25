@@ -1,7 +1,25 @@
 const { io } = require("socket.io-client");
 const supabase = require('../config/supabaseClient');
 const signIn = require("../utils/auth");
+const readline = require('readline'); // FIXED: 'requite' typo
 
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+/**
+ * @typedef {Object} SendMessagePayload
+ * @property {string} room_id - The ID of the room to send the message to
+ * @property {string} content - The actual message content
+ */
+
+/**
+ * @typedef {Object} ReceiveMessagePayload
+ * @property {string} room_id - The ID of the room
+ * @property {string} content - The actual message content
+ * @property {string} username - The user who sent the message
+ */
 
 async function main() {
   try {
@@ -12,10 +30,10 @@ async function main() {
     });
 
     const { data: roomData, error: roomError } = await supabase
-    .from("rooms")
-    .select("id")
-    .eq("name", "test")
-    .single();
+      .from("rooms")
+      .select("id")
+      .eq("name", "test")
+      .single();
     
     if (roomError) throw roomError;
     const TEST_ROOM = roomData.id;
@@ -23,31 +41,52 @@ async function main() {
     socket.on("connect", () => {
       console.log(`[+] Connected to server with ID: ${socket.id}`);
         
-      // 1. Join the room
+      // Join the room
       socket.emit("join_room", TEST_ROOM);
-      console.log(`[+] Emitted join_room for: ${TEST_ROOM}`);
-      
-      // 2. Send a test message after a short delay
-      setTimeout(() => {
-        const messagePayload = {
-          room_id: TEST_ROOM,
-          username: "authenticated_terminal_tester",
-          content: "Hello from the command line!"
-        };
-        socket.emit("send_message", messagePayload);
-        console.log("[+] Emitted send_message:", messagePayload.content);
-      }, 1000);
+      console.log(`[+] Joined room: ${TEST_ROOM}`);
+      console.log(`[!] Type your message and press Enter to send. Type /exit to quit.\n`);
+
+      // Set a prompt indicator for the user
+      rl.setPrompt('> ');
+      rl.prompt();
+
+      rl.on('line', (input) => {
+        const message = input.trim();
+
+        if (message.toLowerCase() === "/exit") {
+          console.log("Exiting...");
+          rl.close();
+          process.exit(0);
+        }
+
+        if (message) {
+          /** @type {SendMessagePayload} */
+          const payload = {
+            room_id: TEST_ROOM,
+            content: message
+          };
+          socket.emit("send_message", payload);
+        }
+        
+        // Reprompt after they hit enter
+        rl.prompt();
+      });
     });
 
-    // 3. Listen for incoming messages
+    // Listen for incoming messages
     socket.on("receive_message", (data) => {
-      console.log("[!] Broadcast received:", data);
-      socket.disconnect();
+      // Clear the current line so incoming text doesn't mess up what the user is currently typing
+      process.stdout.write('\r\x1b[K');
+      
+      console.log(`[${data.username}]: ${data.content}`);
+      
+      // Force the prompt to show up again below the new message
+      rl.prompt(true);
     });
 
     socket.on("disconnect", () => {
-      console.log("[-] Disconnected from server");
-
+      console.log("\n[-] Disconnected from server");
+      process.exit(0);
     });
 
   } catch (error) {
@@ -55,6 +94,5 @@ async function main() {
     process.exit(1);
   }
 }
-
 
 main();
