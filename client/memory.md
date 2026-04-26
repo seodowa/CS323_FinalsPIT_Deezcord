@@ -1,0 +1,61 @@
+# Deezcord - Frontend Client
+
+Welcome to the frontend repository of **Deezcord**, the final project for CS323 (FinalsPIT). This web application is designed for creating and joining topic-based live chat rooms, conceptually similar to Discord.
+
+## 👥 Team
+This project is developed by a team of 5 members, rotating roles (PM/Scrum Master, QA Lead, DevOps Lead, Docs Lead) each sprint:
+- Kent Butaya
+- Christian John Legaspi
+- Theodore Pagalan
+- Carl Dominic Rejas
+- Kerby Fabria
+
+## 🛠️ Technology Stack
+- **Core:** [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
+- **Build Tool:** [Vite 8](https://vite.dev/)
+- **Styling:** [Tailwind CSS v4](https://tailwindcss.com/)
+- **Routing:** [React Router v7](https://reactrouter.com/)
+- **Linting:** ESLint with strict type-aware lint rules
+
+## 🚀 Getting Started
+
+### Prerequisites
+Make sure you have Node.js and npm installed.
+
+### Installation
+1. Navigate to the client directory:
+   ```bash
+   cd client
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+### Available Scripts
+
+- `npm run dev` - Starts the Vite development server with Hot Module Replacement (HMR).
+- `npm run build` - Compiles TypeScript and builds the app for production into the `dist` folder.
+- `npm run lint` - Runs ESLint to catch and fix code quality issues.
+- `npm run preview` - Boots up a local web server to preview the production build.
+
+## 🎯 Current Status & Features
+The client frontend is under active development, focusing heavily on a responsive, modern UI with a premium aesthetic (dark modes, gradients, micro-animations).
+
+**Core Features (In Progress):**
+- **Authentication:** User Registration, Login, and Logout.
+- **Rooms:** Create public/private chat rooms and browse existing ones.
+- **Chat:** Real-time messaging (<500ms latency) via WebSockets (Socket.IO).
+- **History:** Lazy-loading past messages.
+- **Moderation:** Profanity filters, admin roles, and real-time presence tracking.
+
+## 📂 Project Structure
+- `src/assets/` - Static assets like images and icons.
+- `src/components/` - Reusable UI components.
+- `src/context/` - Global state management using React Context.
+- `src/hooks/` - Custom React hooks.
+- `src/layouts/` - Shared layouts like navbars and sidebars.
+- `src/pages/` - Main page views (e.g., Login, Register).
+- `src/services/` - API and WebSocket integration logic.
+- `src/types/` - TypeScript interface definitions.
+- `src/utils/` - Utility functions and helpers.
