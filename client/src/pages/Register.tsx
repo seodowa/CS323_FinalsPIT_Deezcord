@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import AsyncButton from '../components/AsyncButton';
+import { useToast } from '../hooks/useToast';
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('');
@@ -11,16 +13,16 @@ export default function RegisterPage() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    setTimeout(() => setMounted(true), 0);
     const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
     if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-      setIsDarkMode(true);
+      setTimeout(() => setIsDarkMode(true), 0);
       document.documentElement.classList.add('dark');
       document.documentElement.classList.remove('light');
     } else {
-      setIsDarkMode(false);
+      setTimeout(() => setIsDarkMode(false), 0);
       document.documentElement.classList.add('light');
       document.documentElement.classList.remove('dark');
     }
@@ -40,16 +42,20 @@ export default function RegisterPage() {
     }
   };
 
+  const navigate = useNavigate();
+  const { addToast } = useToast();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      alert("Passwords do not match!");
+      addToast("Passwords do not match!", "error");
       return;
     }
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      console.log('Registration attempt', { username, email, password });
+      addToast("Account created successfully!", "success");
+      navigate('/login');
     }, 1500);
   };
 
@@ -159,13 +165,14 @@ export default function RegisterPage() {
             />
           </div>
 
-          <button 
+          <AsyncButton 
             type="submit" 
             className="w-full p-4 bg-blue-500 hover:bg-blue-600 dark:hover:bg-blue-400 text-white border-none rounded-xl text-base font-semibold cursor-pointer transition-all duration-200 relative overflow-hidden hover:-translate-y-[2px] hover:shadow-[0_10px_20px_-10px_rgba(59,130,246,1)] active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed"
-            disabled={isLoading}
+            isLoading={isLoading}
+            loadingText="Creating account..."
           >
-            {isLoading ? 'Creating account...' : 'Create Account'}
-          </button>
+            Create Account
+          </AsyncButton>
         </form>
 
         <div className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
@@ -178,3 +185,4 @@ export default function RegisterPage() {
     </div>
   );
 }
+
