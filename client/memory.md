@@ -60,3 +60,13 @@ The client frontend is under active development, focusing heavily on a responsiv
 - `src/services/` - API and WebSocket integration logic.
 - `src/types/` - TypeScript interface definitions.
 - `src/utils/` - Utility functions and helpers.
+
+
+## Task List
+- Connect login page to auth service.
+- Setup protected routes
+- Create email verification page
+- Create MFA modal
+- Create rooms page
+- Create chat page
+- Turn current sidebar into sidebar component 

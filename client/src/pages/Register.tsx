@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate} from 'react-router-dom';
-import AsyncButton from '../components/AsyncButton';
-import { useToast } from '../hooks/useToast';
+import { Link, useNavigate } from 'react-router-dom';
 import { registerUser } from '../services/authService';
 
 export default function RegisterPage() {
@@ -16,16 +14,16 @@ export default function RegisterPage() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setTimeout(() => setMounted(true), 0);
+    setMounted(true);
     const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
     if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-      setTimeout(() => setIsDarkMode(true), 0);
+      setIsDarkMode(true);
       document.documentElement.classList.add('dark');
       document.documentElement.classList.remove('light');
     } else {
-      setTimeout(() => setIsDarkMode(false), 0);
+      setIsDarkMode(false);
       document.documentElement.classList.add('light');
       document.documentElement.classList.remove('dark');
     }
@@ -45,15 +43,12 @@ export default function RegisterPage() {
     }
   };
 
- 
-  const { addToast } = useToast();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     if (password !== confirmPassword) {
-      addToast("Passwords do not match!", "error");
+      setError("Passwords do not match!");
       return;
     }
 
@@ -61,13 +56,11 @@ export default function RegisterPage() {
     
     try {
       await registerUser(username, email, password);
-      // Success logic belongs here!
-      addToast("Account created successfully!", "success");
+      // Registration successful, redirect to login
       navigate('/login', { state: { message: "Account created successfully. Please sign in." }});
     } catch (err: any) {
       setError(err.message || 'An error occurred during registration.');
     } finally {
-      // Finally should ONLY handle cleanup like removing the loading state
       setIsLoading(false);
     }
   };
@@ -185,14 +178,13 @@ export default function RegisterPage() {
             />
           </div>
 
-          <AsyncButton 
+          <button 
             type="submit" 
             className="w-full p-4 bg-blue-500 hover:bg-blue-600 dark:hover:bg-blue-400 text-white border-none rounded-xl text-base font-semibold cursor-pointer transition-all duration-200 relative overflow-hidden hover:-translate-y-[2px] hover:shadow-[0_10px_20px_-10px_rgba(59,130,246,1)] active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed"
-            isLoading={isLoading}
-            loadingText="Creating account..."
+            disabled={isLoading}
           >
-            Create Account
-          </AsyncButton>
+            {isLoading ? 'Creating account...' : 'Create Account'}
+          </button>
         </form>
 
         <div className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
