@@ -3,17 +3,17 @@ import { Link, useNavigate } from 'react-router-dom';
 import AsyncButton from '../components/AsyncButton';
 import { useToast } from '../hooks/useToast';
 
-export default function LoginPage() {
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+export default function ForgotPasswordPage() {
+  const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [mounted, setMounted] = useState(false);
+  
+  const navigate = useNavigate();
+  const { addToast } = useToast();
 
   useEffect(() => {
     setTimeout(() => setMounted(true), 0);
-    // On mount, read from local storage or system preference
     const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
@@ -42,35 +42,22 @@ export default function LoginPage() {
     }
   };
 
-  const navigate = useNavigate();
-  const { addToast } = useToast();
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate loading for the visual MVP
+    
+    // Simulate sending password reset email
     setTimeout(() => {
       setIsLoading(false);
-      addToast('Successfully signed in!', 'success');
-      
-      if (rememberMe) {
-        // Store a dummy token for the "Remember Me" functionality
-        localStorage.setItem('sb-token', 'dummy-session-token');
-      }
-      
-      navigate('/home');
+      addToast('If an account exists, a reset link has been sent.', 'info');
+      navigate('/login');
     }, 1500);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-200 dark:from-slate-900 dark:to-slate-950 relative overflow-hidden font-sans text-slate-900 dark:text-slate-50 transition-colors duration-500">
       
-      {/* Deezcord Server Status Feature - Top Left */}
-      <div className="absolute top-6 left-6 bg-white/70 dark:bg-slate-800/60 backdrop-blur-md border border-slate-200/50 dark:border-white/10 text-slate-900 dark:text-slate-50 px-4 py-2 rounded-full flex items-center gap-2.5 z-50 shadow-sm transition-colors duration-500">
-        <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
-        <span className="text-sm font-medium">All Systems Operational</span>
-      </div>
-
+      {/* Theme Toggle */}
       {mounted && (
         <button 
           onClick={toggleTheme} 
@@ -98,81 +85,58 @@ export default function LoginPage() {
       )}
 
       {/* Background Blobs for Visual Aesthetics */}
-      <div className="absolute top-[10%] left-[20%] w-[400px] h-[400px] bg-blue-500/30 dark:bg-blue-500/15 rounded-full blur-[80px] z-0 animate-pulse"></div>
-      <div className="absolute bottom-[10%] right-[20%] w-[350px] h-[350px] bg-purple-500/30 dark:bg-purple-500/15 rounded-full blur-[80px] z-0 animate-pulse" style={{ animationDelay: '2s' }}></div>
+      <div className="absolute top-[10%] left-[20%] w-[400px] h-[400px] bg-blue-500/30 dark:bg-blue-500/15 rounded-full blur-[80px] z-0 animate-pulse pointer-events-none"></div>
+      <div className="absolute bottom-[10%] right-[20%] w-[350px] h-[350px] bg-purple-500/30 dark:bg-purple-500/15 rounded-full blur-[80px] z-0 animate-pulse pointer-events-none" style={{ animationDelay: '2s' }}></div>
 
-      <div className="relative z-10 w-full max-w-[420px] bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-white/10 rounded-3xl p-10 md:p-12 shadow-2xl animate-fade-in-up">
+      <div className="relative z-10 w-full max-w-[420px] bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-200/50 dark:border-white/10 rounded-3xl p-10 md:p-12 shadow-2xl animate-fade-in-up">
+        
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-extrabold mb-2 tracking-tight text-slate-900 dark:text-slate-50">Welcome Back</h1>
-          <p className="text-[0.95rem] text-slate-500 dark:text-slate-400 m-0">Enter your details to access your account</p>
+          <div className="w-20 h-20 bg-blue-500/10 dark:bg-blue-500/20 rounded-full mx-auto mb-6 flex items-center justify-center text-blue-500 dark:text-blue-400">
+            <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl md:text-3xl font-extrabold mb-2 tracking-tight text-slate-900 dark:text-slate-50">Reset Password</h1>
+          <p className="text-[0.95rem] text-slate-500 dark:text-slate-400 m-0">Enter your email and we'll send you a link</p>
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="mb-6">
-            <label className="block text-sm font-semibold mb-2 text-slate-900 dark:text-slate-50" htmlFor="identifier">
-              Username or Email
+          <div className="mb-8">
+            <label className="block text-sm font-semibold mb-2 text-slate-900 dark:text-slate-50" htmlFor="email">
+              Email Address
             </label>
             <div className="relative">
               <input
-                id="identifier"
-                type="text"
+                id="email"
+                type="email"
                 className="w-full px-4 py-3.5 bg-white/90 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 rounded-xl text-base text-slate-900 dark:text-slate-50 transition-all duration-200 outline-none focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 focus:-translate-y-[1px] placeholder:text-slate-500/70 dark:placeholder:text-slate-400/70"
                 placeholder="user@example.com"
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
-          </div>
-
-          <div className="mb-6">
-            <label className="block text-sm font-semibold mb-2 text-slate-900 dark:text-slate-50" htmlFor="password">
-              Password
-            </label>
-            <div className="relative">
-              <input
-                id="password"
-                type="password"
-                className="w-full px-4 py-3.5 bg-white/90 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 rounded-xl text-base text-slate-900 dark:text-slate-50 transition-all duration-200 outline-none focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 focus:-translate-y-[1px] placeholder:text-slate-500/70 dark:placeholder:text-slate-400/70"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-between items-center mb-8">
-            <label className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 cursor-pointer">
-              <input
-                type="checkbox"
-                className="accent-blue-500 w-[18px] h-[18px] cursor-pointer"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-              />
-              Remember me
-            </label>
-            <Link to="/forgot-password" className="text-sm text-blue-500 dark:text-blue-400 font-semibold transition-colors duration-200 hover:text-blue-700 dark:hover:text-blue-300 hover:underline">
-              Forgot password?
-            </Link>
           </div>
 
           <AsyncButton 
             type="submit" 
-            className="w-full p-4 bg-blue-500 hover:bg-blue-600 dark:hover:bg-blue-400 text-white border-none rounded-xl text-base font-semibold cursor-pointer transition-all duration-200 relative overflow-hidden hover:-translate-y-[2px] hover:shadow-[0_10px_20px_-10px_rgba(59,130,246,1)] active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full p-4 bg-blue-500 hover:bg-blue-600 dark:hover:bg-blue-400 text-white border-none rounded-xl text-base font-semibold cursor-pointer transition-all duration-200 relative overflow-hidden hover:-translate-y-[2px] hover:shadow-[0_10px_20px_-10px_rgba(59,130,246,1)] active:translate-y-0"
             isLoading={isLoading}
-            loadingText="Signing in..."
+            loadingText="Sending link..."
           >
-            Sign In
+            Send Reset Link
           </AsyncButton>
         </form>
 
-        <div className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
-          Don't have an account? 
-          <Link to="/register" className="text-blue-500 dark:text-blue-400 font-semibold ml-1 transition-colors duration-200 hover:text-blue-700 dark:hover:text-blue-300 hover:underline">
-            Sign up for free
+        <div className="mt-8 text-center text-sm">
+          <Link to="/login" className="text-slate-500 dark:text-slate-400 font-medium transition-colors duration-200 hover:text-slate-900 dark:hover:text-slate-50 flex items-center justify-center gap-2">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Sign In
           </Link>
         </div>
+
       </div>
     </div>
   );

@@ -43,19 +43,20 @@ Make sure you have Node.js and npm installed.
 The client frontend is under active development, focusing heavily on a responsive, modern UI with a premium aesthetic (dark modes, gradients, micro-animations).
 
 **Core Features (In Progress):**
-- **Authentication:** User Registration, Login, and Logout.
+- **Authentication:** User Registration, Login, Logout, and Forgot Password flow.
 - **Rooms:** Create public/private chat rooms and browse existing ones.
 - **Chat:** Real-time messaging (<500ms latency) via WebSockets (Socket.IO).
 - **History:** Lazy-loading past messages.
 - **Moderation:** Profanity filters, admin roles, and real-time presence tracking.
+- **Routing:** Protected routes, global 404 handling.
 
 ## 📂 Project Structure
 - `src/assets/` - Static assets like images and icons.
-- `src/components/` - Reusable UI components.
+- `src/components/` - Reusable UI components. (Note: Use `AsyncButton` for any button that sends or requests data from the server to prevent spam clicking. Use the `useToast` hook for all application notifications instead of standard browser alerts).
 - `src/context/` - Global state management using React Context.
 - `src/hooks/` - Custom React hooks.
 - `src/layouts/` - Shared layouts like navbars and sidebars.
-- `src/pages/` - Main page views (e.g., Login, Register).
+- `src/pages/` - Main page views (e.g., Login, Register, Home, ForgotPassword, NotFound).
 - `src/services/` - API and WebSocket integration logic.
 - `src/types/` - TypeScript interface definitions.
 - `src/utils/` - Utility functions and helpers.

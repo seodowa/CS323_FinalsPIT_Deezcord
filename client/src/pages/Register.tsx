@@ -1,26 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate} from 'react-router-dom';
+import AsyncButton from '../components/AsyncButton';
+import { useToast } from '../hooks/useToast';
+import { registerUser } from '../services/authService';
 
 export default function RegisterPage() {
+  const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    setTimeout(() => setMounted(true), 0);
     const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
     if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-      setIsDarkMode(true);
+      setTimeout(() => setIsDarkMode(true), 0);
       document.documentElement.classList.add('dark');
       document.documentElement.classList.remove('light');
     } else {
-      setIsDarkMode(false);
+      setTimeout(() => setIsDarkMode(false), 0);
       document.documentElement.classList.add('light');
       document.documentElement.classList.remove('dark');
     }
@@ -40,17 +45,31 @@ export default function RegisterPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+ 
+  const { addToast } = useToast();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
     if (password !== confirmPassword) {
-      alert("Passwords do not match!");
+      addToast("Passwords do not match!", "error");
       return;
     }
+
     setIsLoading(true);
-    setTimeout(() => {
+    
+    try {
+      await registerUser(username, email, password);
+      // Success logic belongs here!
+      addToast("Account created successfully!", "success");
+      navigate('/login', { state: { message: "Account created successfully. Please sign in." }});
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during registration.');
+    } finally {
+      // Finally should ONLY handle cleanup like removing the loading state
       setIsLoading(false);
-      console.log('Registration attempt', { username, email, password });
-    }, 1500);
+    }
   };
 
   return (
@@ -97,6 +116,13 @@ export default function RegisterPage() {
           <h1 className="text-3xl font-extrabold mb-2 tracking-tight text-slate-900 dark:text-slate-50">Create Account</h1>
           <p className="text-[0.95rem] text-slate-500 dark:text-slate-400 m-0">Join the Deezcord community today</p>
         </div>
+
+        {/* Error message display */}
+        {error && (
+          <div className="mb-6 p-3 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-lg text-sm text-center font-medium">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
@@ -159,13 +185,14 @@ export default function RegisterPage() {
             />
           </div>
 
-          <button 
+          <AsyncButton 
             type="submit" 
             className="w-full p-4 bg-blue-500 hover:bg-blue-600 dark:hover:bg-blue-400 text-white border-none rounded-xl text-base font-semibold cursor-pointer transition-all duration-200 relative overflow-hidden hover:-translate-y-[2px] hover:shadow-[0_10px_20px_-10px_rgba(59,130,246,1)] active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed"
-            disabled={isLoading}
+            isLoading={isLoading}
+            loadingText="Creating account..."
           >
-            {isLoading ? 'Creating account...' : 'Create Account'}
-          </button>
+            Create Account
+          </AsyncButton>
         </form>
 
         <div className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
