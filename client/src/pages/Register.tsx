@@ -14,16 +14,16 @@ export default function RegisterPage() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    setTimeout(() => setMounted(true), 0);
     const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
     if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-      setIsDarkMode(true);
+      setTimeout(() => setIsDarkMode(true), 0);
       document.documentElement.classList.add('dark');
       document.documentElement.classList.remove('light');
     } else {
-      setIsDarkMode(false);
+      setTimeout(() => setIsDarkMode(false), 0);
       document.documentElement.classList.add('light');
       document.documentElement.classList.remove('dark');
     }
@@ -58,8 +58,9 @@ export default function RegisterPage() {
       await registerUser(username, email, password);
       // Registration successful, redirect to login
       navigate('/login', { state: { message: "Account created successfully. Please sign in." }});
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during registration.');
+    } catch (err: unknown) {
+      const error = err as Error;
+      setError(error.message || 'An error occurred during registration.');
     } finally {
       setIsLoading(false);
     }

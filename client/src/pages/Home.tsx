@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import AsyncButton from '../components/AsyncButton';
 import { useToast } from '../hooks/useToast';
+import { useAuth } from '../hooks/useAuth';
 
 export default function HomePage() {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
@@ -11,8 +11,8 @@ export default function HomePage() {
     { id: '2', name: 'Project Alpha' },
     { id: '3', name: 'Random Memes' },
   ]);
-  const navigate = useNavigate();
   const { addToast } = useToast();
+  const { logout } = useAuth();
 
   useEffect(() => {
     setTimeout(() => setMounted(true), 0);
@@ -45,11 +45,12 @@ export default function HomePage() {
   };
 
   const handleLogout = async () => {
-    // Simulate async logout
+    // Simulate async logout for UI feedback
     await new Promise(resolve => setTimeout(resolve, 600));
-    localStorage.removeItem('sb-token');
+    logout();
     addToast('You have been signed out.', 'info');
-    navigate('/login');
+    // Force a full reload to reset App.tsx state completely
+    window.location.href = '/login';
   };
 
   return (

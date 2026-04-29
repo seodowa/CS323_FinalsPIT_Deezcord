@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AsyncButton from '../components/AsyncButton';
 import { useToast } from '../hooks/useToast';
+import { loginUser } from '../services/authService';
+import { useAuth } from '../hooks/useAuth';
 
 export default function LoginPage() {
   const [identifier, setIdentifier] = useState('');
@@ -10,6 +12,8 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [mounted, setMounted] = useState(false);
+
+  const { login } = useAuth();
 
   useEffect(() => {
     setTimeout(() => setMounted(true), 0);
@@ -45,21 +49,22 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { addToast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate loading for the visual MVP
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const data = await loginUser(identifier, password);
       addToast('Successfully signed in!', 'success');
       
-      if (rememberMe) {
-        // Store a dummy token for the "Remember Me" functionality
-        localStorage.setItem('sb-token', 'dummy-session-token');
-      }
+      login(data.token, rememberMe);
       
       navigate('/home');
-    }, 1500);
+    } catch (error: unknown) {
+      const err = error as Error;
+      addToast(err.message || 'Login failed', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
