@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { verifyUser, AuthenticatedRequest } from '../middleware/authMiddleware';
-import { signUp } from '../utils/auth';
+import signIn, { signUp } from '../utils/auth';
 
 const router = express.Router();
 
@@ -22,6 +22,28 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
     });
   } catch (error: any) {
     res.status(400).json({ error: error.message || "Failed to register" });
+  }
+});
+
+// POST /auth/login - Log in an existing user
+router.post('/login', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { identifier, password } = req.body;
+
+    if (!identifier || !password) {
+      res.status(400).json({ error: "Identifier (username or email) and password are required." });
+      return;
+    }
+
+    const { token, user } = await signIn(identifier, password);
+    
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      user
+    });
+  } catch (error: any) {
+    res.status(401).json({ error: error.message || "Failed to login" });
   }
 });
 
