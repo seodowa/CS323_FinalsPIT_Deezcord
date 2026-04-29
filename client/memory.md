@@ -63,10 +63,10 @@ The client frontend is under active development, focusing heavily on a responsiv
 
 
 ## Task List
-- Connect login page to auth service.
-- Setup protected routes
-- Create email verification page
-- Create MFA modal
-- Create rooms page (For example: Discord Servers)
-- Create chat page (For example: Discord Chat)
-- Turn current sidebar into sidebar component 
+- [x] Connect login page to auth service.
+- [x] Setup protected routes
+- [ ] Create email verification page
+- [ ] Create MFA modal
+- [ ] Create rooms page (For example: Discord Servers)
+- [ ] Create chat page (For example: Discord Chat)
+- [ ] Turn current sidebar into sidebar component 

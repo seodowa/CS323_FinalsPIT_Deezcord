@@ -4,20 +4,19 @@ export async function signIn(identifier: string, password: string) {
     try {
         let email = identifier;
 
-        // If identifier doesn't have an '@', assume it's a username
+        // If identifier doesn't have an '@', resolve it to an email via the profiles table
         if (!identifier.includes('@')) {
-            const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
-            
-            if (listError) throw listError;
+            const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('email')
+                .eq('username', identifier)
+                .single();
 
-            // Find the user whose username in user_metadata matches the identifier
-            const user = users.find(u => u.user_metadata?.username === identifier);
-            
-            if (!user || !user.email) {
+            if (profileError || !profileData?.email) {
                 throw new Error("Invalid username or password.");
             }
-            
-            email = user.email;
+
+            email = profileData.email;
         }
 
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -53,6 +52,9 @@ export async function signUp(email: string, password: string, username: string) 
 
         if (error) throw error;
 
+        // NOTE: The public.profiles entry is now created automatically by a 
+        // Postgres trigger (handle_new_user_profile) on the auth.users table.
+        
         return data;
     } catch (error: any) {
         console.log("Registration failed.", error.message);

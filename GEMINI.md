@@ -60,6 +60,7 @@ Deezcord is a real-time chat system developed as a Performance Innovative Task f
 - **Data Safety:** 
   - Server-side validation of room names and message content.
   - Sender identity is determined by the authenticated socket user, not client-provided IDs.
+- **Supabase MCP:** Strictly use **READ-ONLY** permissions when interacting with the Supabase MCP tools. Do not perform any write operations, migrations, or data modifications via the MCP.
 - **Styling:** Tailwind CSS is used for all UI components. Dark mode is supported via the `.dark` class.
 
 ## Key Files
