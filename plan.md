@@ -18,14 +18,21 @@ This document tracks the progress of tasks outlined in `client/memory.md`.
   - Integrate it into the login/auth flow.
 
 ## Phase 2: Layout & Navigation
-- [ ] **Turn current sidebar into sidebar component**
-  - Extract the sidebar logic/UI from existing pages (likely Home) into `client/src/layouts/Sidebar.tsx`.
-  - Apply the sidebar layout to the app structure.
+- [x] **Turn current sidebar into sidebar component**
+  - Extracted sidebar logic into `client/src/components/Sidebar.tsx`.
+  - Implemented collapsible desktop view and mobile off-canvas drawer.
+  - Applied the "Tray" layout with glassmorphic shell.
 
 ## Phase 3: Core Features
-- [ ] **Create rooms page**
-  - Add `client/src/pages/Rooms.tsx` to browse and select chat rooms.
-  - Implement routing to individual chat rooms.
-- [ ] **Create chat page**
-  - Add `client/src/pages/Chat.tsx` to handle the real-time messaging view.
-  - Integrate WebSocket communication and message rendering.
+- [x] **Integrate rooms with backend**
+  - Created `client/src/services/roomService.ts`.
+  - Connected Sidebar to `GET /rooms` and `POST /rooms`.
+  - Implemented room selection state in `Home.tsx`.
+- [ ] **Enhance Room Experience**
+  - Modify `rooms` schema to include `profile_picture_url`.
+  - Create a private Supabase Storage bucket for room profiles.
+  - Implement a custom, high-quality Room Creation Modal (replacing the browser prompt).
+- [ ] **Create chat page / Real-time messaging**
+  - Implement message history fetching (`GET /rooms/:roomId/messages`).
+  - Integrate Socket.io for real-time message broadcasting.
+  - Build the chat interface within the content tray.

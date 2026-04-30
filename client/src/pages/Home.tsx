@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import Sidebar from '../components/Sidebar';
+import CreateRoomModal from '../components/CreateRoomModal';
 import type { Room } from '../types/room';
 import { useToast } from '../hooks/useToast';
 import { useAuth } from '../hooks/useAuth';
@@ -9,6 +10,7 @@ export default function HomePage() {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [mounted, setMounted] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [currentRoom, setCurrentRoom] = useState<Room | null>(null);
   const [isLoadingRooms, setIsLoadingRooms] = useState(true);
@@ -53,11 +55,13 @@ export default function HomePage() {
     setIsMobileMenuOpen(false);
   };
 
-  const handleCreateRoom = async () => {
-    const name = prompt('Enter room name:');
-    if (!name) return;
-
+  const handleCreateRoom = async (name: string, file: File | null) => {
     try {
+      // TODO: Handle file upload logic once backend supports multipart/form-data
+      if (file) {
+        console.log('File upload pending backend implementation:', file.name);
+      }
+      
       const newRoom = await createRoom(name);
       setRooms(prev => [...prev, newRoom]);
       setCurrentRoom(newRoom);
@@ -65,6 +69,7 @@ export default function HomePage() {
     } catch (err) {
       const error = err as Error;
       addToast(error.message || 'Failed to create room', 'error');
+      throw error; // Rethrow to let the modal handle loading state
     }
   };
 
@@ -108,8 +113,14 @@ export default function HomePage() {
         onLogout={handleLogout}
         onClose={() => setIsMobileMenuOpen(false)}
         onSelectRoom={handleSelectRoom}
-        onCreateRoom={handleCreateRoom}
+        onCreateRoom={() => setIsCreateModalOpen(true)}
         isLoadingRooms={isLoadingRooms}
+      />
+
+      <CreateRoomModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)} 
+        onCreate={handleCreateRoom} 
       />
 
       {/* Main Content - Provides the shell background for the Header and the space behind the Content Tray's corner */}

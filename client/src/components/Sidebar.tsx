@@ -143,13 +143,17 @@ export default function Sidebar({
                   } ${isCollapsed ? 'md:justify-center md:p-2 md:w-12 md:h-12 md:shrink-0' : ''}`}
                   title={isCollapsed ? room.name : undefined}
                 >
-                  <div className={`w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center font-bold transition-colors duration-200 ${
-                    currentRoomId === room.id
-                    ? 'bg-white/20 text-white'
-                    : 'bg-blue-500/10 dark:bg-blue-400/10 text-blue-500 dark:text-blue-400 group-hover:bg-blue-500 group-hover:text-white dark:group-hover:bg-blue-500 dark:group-hover:text-white'
-                  }`}>
-                    #
-                  </div>
+              <div className={`w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center font-bold transition-colors duration-200 overflow-hidden ${
+                currentRoomId === room.id
+                ? 'bg-white/20 text-white'
+                : 'bg-blue-500/10 dark:bg-blue-400/10 text-blue-500 dark:text-blue-400 group-hover:bg-blue-500 group-hover:text-white dark:group-hover:bg-blue-500 dark:group-hover:text-white'
+              }`}>
+                {room.room_profile ? (
+                  <img src={room.room_profile} alt={`${room.name} profile`} className="w-full h-full object-cover" />
+                ) : (
+                  <span>{room.name.charAt(0).toUpperCase()}</span>
+                )}
+              </div>
                   <span className={`font-medium transition-colors duration-200 truncate ${isCollapsed ? 'md:hidden' : ''} ${currentRoomId === room.id ? 'text-white' : ''}`}>
                     {room.name}
                   </span>
