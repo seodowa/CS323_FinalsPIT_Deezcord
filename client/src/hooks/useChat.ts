@@ -10,7 +10,12 @@ export const useChat = (roomId: string | undefined, isMember: boolean | undefine
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const { user } = useAuth();
-  const { joinRoom: socketJoinRoom, sendMessage: socketSendMessage, onMessage } = useSocket();
+  const { 
+    joinRoom: socketJoinRoom, 
+    leaveRoom: socketLeaveRoom,
+    sendMessage: socketSendMessage, 
+    onMessage 
+  } = useSocket();
 
   const fetchMembers = useCallback(async (id: string) => {
     try {
@@ -25,7 +30,8 @@ export const useChat = (roomId: string | undefined, isMember: boolean | undefine
     setIsLoadingMessages(true);
     try {
       const data = await getMessages(id);
-      setMessages(data.messages);
+      // getMessages now returns the array directly
+      setMessages(data);
     } catch (err) {
       console.error('Failed to load messages:', err);
     } finally {
@@ -38,20 +44,31 @@ export const useChat = (roomId: string | undefined, isMember: boolean | undefine
       fetchMembers(roomId);
       fetchMessages(roomId);
       socketJoinRoom(roomId);
+      
+      return () => {
+        socketLeaveRoom(roomId);
+      };
     } else {
       setMembers([]);
       setMessages([]);
     }
-  }, [roomId, isMember, fetchMembers, fetchMessages, socketJoinRoom]);
+  }, [roomId, isMember, fetchMembers, fetchMessages, socketJoinRoom, socketLeaveRoom]);
 
   useEffect(() => {
     const unsubscribe = onMessage((newMessage) => {
       if (newMessage.room_id === roomId) {
         setMessages(prev => {
+          // Check for existing message by ID (handles both normal sync and deduplicating optimistic updates)
           const exists = prev.some(m => m.id === newMessage.id);
           if (exists) return prev;
           
-          return [...prev, {
+          // Remove any temporary optimistic messages that match the content and user
+          // This ensures that when the server broadcast arrives, it "replaces" the temporary one
+          const filtered = prev.filter(m => 
+            !(m.id.startsWith('temp-') && m.content === newMessage.content && m.username === newMessage.username)
+          );
+
+          return [...filtered, {
             ...newMessage,
             id: newMessage.id || Date.now().toString(),
             created_at: newMessage.created_at || new Date().toISOString()
