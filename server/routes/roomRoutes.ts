@@ -1,8 +1,17 @@
 import express, { Response } from 'express';
+import multer from 'multer';
 import supabase from '../config/supabaseClient';
-import { verifyUser, verifyRoomMember, AuthenticatedRequest } from '../middleware/authMiddleware';
+import { verifyUser, verifyRoomMember, verifyRoomOwner, AuthenticatedRequest } from '../middleware/authMiddleware';
 
 const router = express.Router();
+
+// Configure multer for memory storage
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+});
 
 // Add input validation helper
 const validateRoomName = (name: any): boolean => {
@@ -12,43 +21,29 @@ const validateRoomName = (name: any): boolean => {
   return true;
 };
 
-// server/routes/roomRoutes.ts
-
+// GET /rooms/:roomId/messages - Fetch message history for a room (PROTECTED)
 router.get('/:roomId/messages', verifyUser, verifyRoomMember, async (req: AuthenticatedRequest, res: Response) => {
   const { roomId } = req.params;
-  
-  // 1. Get pagination parameters from query string (e.g., ?page=0&limit=50)
-  const page = parseInt(req.query.page as string) || 0;
-  const limit = parseInt(req.query.limit as string) || 50;
 
-  // 2. Calculate the range
-  const from = page * limit;
-  const to = from + limit - 1;
-
-  const { data, error, count } = await supabase
+  const { data, error } = await supabase
     .from('messages')
-    .select('*', { count: 'exact' }) // 'exact' returns total count of messages
+    .select('*')
     .eq('room_id', roomId)
-    .order('created_at', { ascending: false }) // Get newest messages first for chat
-    .range(from, to);
+    .order('created_at', { ascending: true });
 
   if (error) {
-      res.status(500).json({ error: error.message });
-      return;
+    res.status(500).json({ error: error.message });
+    return;
   }
 
-  // 3. Return data along with metadata so the frontend knows if there's more to load
-  res.json({
-    messages: data.reverse(), // Reverse back to chronological order for the UI
-    nextPage: data.length === limit ? page + 1 : null,
-    totalCount: count
-  });
+  res.json(data);
 });
 
 // POST /rooms - Create a new chat room (PROTECTED)
-router.post('/', verifyUser, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/', verifyUser, upload.single('file'), async (req: AuthenticatedRequest, res: Response) => {
   const { name } = req.body;
   const userId = req.user?.id;
+  const file = req.file;
 
   if (!name) {
     res.status(400).json({ error: "Room name is required" });
@@ -58,10 +53,39 @@ router.post('/', verifyUser, async (req: AuthenticatedRequest, res: Response) =>
     return;
   }
 
-  // Use a transaction-like approach (though Supabase doesn't support them easily via JS, we can do sequential)
+  let roomProfileUrl = null;
+
+  // Handle file upload if present
+  if (file) {
+    const fileExt = file.originalname.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+    const filePath = `room_profiles/${fileName}`;
+
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('room_profiles')
+      .upload(filePath, file.buffer, {
+        contentType: file.mimetype,
+        upsert: false
+      });
+
+    if (uploadError) {
+      console.error('Storage upload error:', uploadError);
+      // We'll continue even if upload fails, just without a profile picture
+    } else {
+      const { data: { publicUrl } } = supabase.storage
+        .from('room_profiles')
+        .getPublicUrl(filePath);
+      
+      roomProfileUrl = publicUrl;
+    }
+  }
+
   const { data: roomData, error: roomError } = await supabase
     .from('rooms')
-    .insert([{ name: name }])
+    .insert([{ 
+      name: name,
+      room_profile: roomProfileUrl 
+    }])
     .select()
     .single();
 
@@ -205,6 +229,161 @@ router.get('/', verifyUser, async (req: AuthenticatedRequest, res: Response) => 
   }));
 
   res.json(processedRooms);
+});
+
+// PATCH /rooms/:roomId - Update room details (OWNER ONLY)
+router.patch('/:roomId', verifyUser, verifyRoomOwner, upload.single('file'), async (req: AuthenticatedRequest, res: Response) => {
+  const { roomId } = req.params;
+  const { name } = req.body;
+  const file = req.file;
+
+  const updateData: any = {};
+  if (name) {
+    if (!validateRoomName(name)) {
+      res.status(400).json({ error: "Room name must be 1-100 characters" });
+      return;
+    }
+    updateData.name = name;
+  }
+
+  if (file) {
+    const fileExt = file.originalname.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+    const filePath = `room_profiles/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('room_profiles')
+      .upload(filePath, file.buffer, {
+        contentType: file.mimetype,
+        upsert: false
+      });
+
+    if (!uploadError) {
+      const { data: { publicUrl } } = supabase.storage
+        .from('room_profiles')
+        .getPublicUrl(filePath);
+      updateData.room_profile = publicUrl;
+    }
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    res.status(400).json({ error: "No update data provided" });
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from('rooms')
+    .update(updateData)
+    .eq('id', roomId)
+    .select()
+    .single();
+
+  if (error) {
+    res.status(500).json({ error: error.message });
+    return;
+  }
+
+  res.json(data);
+});
+
+// DELETE /rooms/:roomId/members/:targetUserId - Kick a member (OWNER ONLY)
+router.delete('/:roomId/members/:targetUserId', verifyUser, verifyRoomOwner, async (req: AuthenticatedRequest, res: Response) => {
+  const { roomId, targetUserId } = req.params;
+  const ownerId = req.user?.id;
+
+  if (targetUserId === ownerId) {
+    res.status(400).json({ error: "Owners cannot kick themselves. Use the leave endpoint if you want to leave (requires ownership transfer first if implemented)" });
+    return;
+  }
+
+  const { error } = await supabase
+    .from('room_members')
+    .delete()
+    .eq('room_id', roomId)
+    .eq('user_id', targetUserId);
+
+  if (error) {
+    res.status(500).json({ error: error.message });
+    return;
+  }
+
+  res.status(200).json({ message: "Member removed successfully" });
+});
+
+// POST /rooms/:roomId/members - Add a member by email (OWNER ONLY)
+router.post('/:roomId/members', verifyUser, verifyRoomOwner, async (req: AuthenticatedRequest, res: Response) => {
+  const { roomId } = req.params;
+  const { email } = req.body;
+
+  if (!email) {
+    res.status(400).json({ error: "User email is required" });
+    return;
+  }
+
+  // Look up user by email in profiles
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('email', email)
+    .single();
+
+  if (profileError || !profile) {
+    res.status(404).json({ error: "User with this email not found" });
+    return;
+  }
+
+  // Check if already a member
+  const { data: existingMember } = await supabase
+    .from('room_members')
+    .select('*')
+    .eq('room_id', roomId)
+    .eq('user_id', profile.id)
+    .single();
+
+  if (existingMember) {
+    res.status(400).json({ error: "User is already a member of this room" });
+    return;
+  }
+
+  const { error } = await supabase
+    .from('room_members')
+    .insert([{ 
+      room_id: roomId, 
+      user_id: profile.id,
+      role: 'member' 
+    }]);
+
+  if (error) {
+    res.status(500).json({ error: error.message });
+    return;
+  }
+
+  res.status(201).json({ message: "Member added successfully" });
+});
+
+// DELETE /rooms/:roomId/leave - Leave a room (MEMBER ONLY)
+router.delete('/:roomId/leave', verifyUser, verifyRoomMember, async (req: AuthenticatedRequest, res: Response) => {
+  const { roomId } = req.params;
+  const userId = req.user?.id;
+  const role = (req as any).roomRole;
+
+  if (role === 'owner') {
+    res.status(400).json({ error: "Owners cannot leave their own room. This prototype does not support ownership transfer or room deletion yet." });
+    return;
+  }
+
+  const { error } = await supabase
+    .from('room_members')
+    .delete()
+    .eq('room_id', roomId)
+    .eq('user_id', userId);
+
+  if (error) {
+    res.status(500).json({ error: error.message });
+    return;
+  }
+
+  res.status(200).json({ message: "Successfully left the room" });
 });
 
 export default router;

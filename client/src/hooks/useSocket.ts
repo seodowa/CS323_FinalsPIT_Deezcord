@@ -40,6 +40,12 @@ export const useSocket = () => {
     }
   }, []);
 
+  const leaveRoom = useCallback((roomId: string) => {
+    if (socketRef.current) {
+      socketRef.current.emit('leave_room', roomId);
+    }
+  }, []);
+
   const sendMessage = useCallback((data: { room_id: string; content: string }) => {
     if (socketRef.current) {
       socketRef.current.emit('send_message', data);
@@ -57,5 +63,5 @@ export const useSocket = () => {
     };
   }, []);
 
-  return { isConnected, joinRoom, sendMessage, onMessage };
+  return { isConnected, joinRoom, leaveRoom, sendMessage, onMessage };
 };

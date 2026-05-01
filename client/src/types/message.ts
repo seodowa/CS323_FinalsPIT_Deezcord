@@ -12,8 +12,9 @@ export interface SendMessagePayload {
 }
 
 export interface ReceiveMessagePayload {
+  id: string;
   room_id: string;
   username: string;
   content: string;
-  created_at?: string;
+  created_at: string;
 }

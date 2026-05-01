@@ -28,10 +28,13 @@ This document tracks the progress of tasks outlined in `client/memory.md`.
   - Created `client/src/services/roomService.ts`.
   - Connected Sidebar to `GET /rooms` and `POST /rooms`.
   - Implemented room selection state in `Home.tsx`.
-- [ ] **Enhance Room Experience**
-  - Modify `rooms` schema to include `profile_picture_url`.
-  - Create a private Supabase Storage bucket for room profiles.
-  - Implement a custom, high-quality Room Creation Modal (replacing the browser prompt).
+- [x] **Enhance Room Experience**
+  - [x] Modify `rooms` schema to include `room_profile` (database column).
+  - [x] Create a private Supabase Storage bucket for room profiles.
+  - [x] Implement a custom, high-quality Room Creation Modal (replacing the browser prompt).
+  - [x] Wire up `CreateRoomModal` to backend with file upload support.
+  - [x] Update `roomService`, `useRooms`, and `Home` to handle multipart/form-data.
+  - [x] Ensure `Sidebar` displays the room profile picture correctly.
 - [ ] **Create chat page / Real-time messaging**
   - Implement message history fetching (`GET /rooms/:roomId/messages`).
   - Integrate Socket.io for real-time message broadcasting.
