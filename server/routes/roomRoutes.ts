@@ -1,7 +1,7 @@
 import express, { Response } from 'express';
 import multer from 'multer';
 import supabase from '../config/supabaseClient';
-import { verifyUser, verifyRoomMember, AuthenticatedRequest } from '../middleware/authMiddleware';
+import { verifyUser, verifyRoomMember, verifyRoomOwner, AuthenticatedRequest } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
@@ -229,6 +229,161 @@ router.get('/', verifyUser, async (req: AuthenticatedRequest, res: Response) => 
   }));
 
   res.json(processedRooms);
+});
+
+// PATCH /rooms/:roomId - Update room details (OWNER ONLY)
+router.patch('/:roomId', verifyUser, verifyRoomOwner, upload.single('file'), async (req: AuthenticatedRequest, res: Response) => {
+  const { roomId } = req.params;
+  const { name } = req.body;
+  const file = req.file;
+
+  const updateData: any = {};
+  if (name) {
+    if (!validateRoomName(name)) {
+      res.status(400).json({ error: "Room name must be 1-100 characters" });
+      return;
+    }
+    updateData.name = name;
+  }
+
+  if (file) {
+    const fileExt = file.originalname.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+    const filePath = `room_profiles/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('room_profiles')
+      .upload(filePath, file.buffer, {
+        contentType: file.mimetype,
+        upsert: false
+      });
+
+    if (!uploadError) {
+      const { data: { publicUrl } } = supabase.storage
+        .from('room_profiles')
+        .getPublicUrl(filePath);
+      updateData.room_profile = publicUrl;
+    }
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    res.status(400).json({ error: "No update data provided" });
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from('rooms')
+    .update(updateData)
+    .eq('id', roomId)
+    .select()
+    .single();
+
+  if (error) {
+    res.status(500).json({ error: error.message });
+    return;
+  }
+
+  res.json(data);
+});
+
+// DELETE /rooms/:roomId/members/:targetUserId - Kick a member (OWNER ONLY)
+router.delete('/:roomId/members/:targetUserId', verifyUser, verifyRoomOwner, async (req: AuthenticatedRequest, res: Response) => {
+  const { roomId, targetUserId } = req.params;
+  const ownerId = req.user?.id;
+
+  if (targetUserId === ownerId) {
+    res.status(400).json({ error: "Owners cannot kick themselves. Use the leave endpoint if you want to leave (requires ownership transfer first if implemented)" });
+    return;
+  }
+
+  const { error } = await supabase
+    .from('room_members')
+    .delete()
+    .eq('room_id', roomId)
+    .eq('user_id', targetUserId);
+
+  if (error) {
+    res.status(500).json({ error: error.message });
+    return;
+  }
+
+  res.status(200).json({ message: "Member removed successfully" });
+});
+
+// POST /rooms/:roomId/members - Add a member by email (OWNER ONLY)
+router.post('/:roomId/members', verifyUser, verifyRoomOwner, async (req: AuthenticatedRequest, res: Response) => {
+  const { roomId } = req.params;
+  const { email } = req.body;
+
+  if (!email) {
+    res.status(400).json({ error: "User email is required" });
+    return;
+  }
+
+  // Look up user by email in profiles
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('email', email)
+    .single();
+
+  if (profileError || !profile) {
+    res.status(404).json({ error: "User with this email not found" });
+    return;
+  }
+
+  // Check if already a member
+  const { data: existingMember } = await supabase
+    .from('room_members')
+    .select('*')
+    .eq('room_id', roomId)
+    .eq('user_id', profile.id)
+    .single();
+
+  if (existingMember) {
+    res.status(400).json({ error: "User is already a member of this room" });
+    return;
+  }
+
+  const { error } = await supabase
+    .from('room_members')
+    .insert([{ 
+      room_id: roomId, 
+      user_id: profile.id,
+      role: 'member' 
+    }]);
+
+  if (error) {
+    res.status(500).json({ error: error.message });
+    return;
+  }
+
+  res.status(201).json({ message: "Member added successfully" });
+});
+
+// DELETE /rooms/:roomId/leave - Leave a room (MEMBER ONLY)
+router.delete('/:roomId/leave', verifyUser, verifyRoomMember, async (req: AuthenticatedRequest, res: Response) => {
+  const { roomId } = req.params;
+  const userId = req.user?.id;
+  const role = (req as any).roomRole;
+
+  if (role === 'owner') {
+    res.status(400).json({ error: "Owners cannot leave their own room. This prototype does not support ownership transfer or room deletion yet." });
+    return;
+  }
+
+  const { error } = await supabase
+    .from('room_members')
+    .delete()
+    .eq('room_id', roomId)
+    .eq('user_id', userId);
+
+  if (error) {
+    res.status(500).json({ error: error.message });
+    return;
+  }
+
+  res.status(200).json({ message: "Successfully left the room" });
 });
 
 export default router;
