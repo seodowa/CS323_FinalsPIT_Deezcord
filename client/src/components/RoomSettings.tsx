@@ -209,35 +209,41 @@ export default function RoomSettings({ room, members, onRoomUpdate, onMemberChan
               </h3>
               
               <div className="space-y-3">
-                {members.map((member) => (
-                  <div key={member.user_id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/50 dark:border-white/5 transition-all hover:shadow-sm">
-                    <div className="flex items-center gap-4 min-w-0">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-sm flex-shrink-0">
-                        {member.profiles.username.substring(0, 2).toUpperCase()}
+                {members.map((member) => {
+                  // Defensive check: Supabase joins can sometimes return an array or object
+                  const profile = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles;
+                  if (!profile) return null;
+
+                  return (
+                    <div key={member.user_id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/50 dark:border-white/5 transition-all hover:shadow-sm">
+                      <div className="flex items-center gap-4 min-w-0">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-sm flex-shrink-0">
+                          {(profile.username || 'U').substring(0, 2).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-bold text-slate-900 dark:text-slate-50 truncate">{profile.username || 'Unknown User'}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{profile.email || 'No email provided'}</p>
+                        </div>
+                        {member.role === 'owner' && (
+                          <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-500 text-[10px] font-bold uppercase tracking-tight">Owner</span>
+                        )}
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-bold text-slate-900 dark:text-slate-50 truncate">{member.profiles.username}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{member.profiles.email}</p>
-                      </div>
-                      {member.role === 'owner' && (
-                        <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-500 text-[10px] font-bold uppercase tracking-tight">Owner</span>
+                      
+                      {isOwner && member.role !== 'owner' && (
+                        <AsyncButton
+                          onClick={() => handleKickMember(member.user_id, profile.username || 'this user')}
+                          isLoading={kickingId === member.user_id}
+                          className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                          title="Remove member"
+                        >
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </AsyncButton>
                       )}
                     </div>
-                    
-                    {isOwner && member.role !== 'owner' && (
-                      <AsyncButton
-                        onClick={() => handleKickMember(member.user_id, member.profiles.username)}
-                        isLoading={kickingId === member.user_id}
-                        className="p-2 text-slate-400 hover:text-red-500 transition-colors"
-                        title="Remove member"
-                      >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </AsyncButton>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
