@@ -72,7 +72,7 @@ Deezcord is a real-time chat system developed as a Performance Innovative Task f
 - `client/src/pages/`: Contains all main UI views including Login, Register, Home, ForgotPassword, and NotFound.
 
 ## TODOs / Future Enhancements
-- [ ] Implement full message persistence on the frontend.
+- [x] Implement full message persistence on the frontend.
 - [x] Complete the integration of the Login/Register pages with the backend.
 - [ ] Add real-time room creation updates to the sidebar (Socket.io).
 - [ ] Implement user profiles and avatars.

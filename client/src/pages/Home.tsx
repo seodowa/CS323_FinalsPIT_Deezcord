@@ -1,90 +1,43 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import CreateRoomModal from '../components/CreateRoomModal';
 import AsyncButton from '../components/AsyncButton';
+import MessageList from '../components/MessageList';
+import MessageInput from '../components/MessageInput';
 import type { Room } from '../types/room';
 import { useToast } from '../hooks/useToast';
 import { useAuth } from '../hooks/useAuth';
-import { getRooms, createRoom, joinRoom, getRoomMembers, getDiscoverRooms } from '../services/roomService';
+import { useTheme } from '../hooks/useTheme';
+import { useRooms } from '../hooks/useRooms';
+import { useChat } from '../hooks/useChat';
 
 export default function HomePage() {
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
-  const [mounted, setMounted] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [rooms, setRooms] = useState<Room[]>([]);
   const [currentRoom, setCurrentRoom] = useState<Room | null>(null);
-  const [isLoadingRooms, setIsLoadingRooms] = useState(true);
-  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
-  const [roomMembers, setRoomMembers] = useState<Member[]>([]);
-  const [isJoining, setIsJoining] = useState(false);
   const [isDiscoveryMode, setIsDiscoveryMode] = useState(false);
-  const [discoverRooms, setDiscoverRooms] = useState<Room[]>([]);
-  const [isLoadingDiscover, setIsLoadingDiscover] = useState(false);
   
   const { addToast } = useToast();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  const { isDarkMode, mounted, toggleTheme } = useTheme();
+  
+  const { 
+    rooms, 
+    discoverRooms, 
+    isLoadingRooms, 
+    isLoadingDiscover, 
+    isCreatingRoom, 
+    isJoining, 
+    fetchDiscoverRooms, 
+    createNewRoom, 
+    joinExistingRoom 
+  } = useRooms();
 
-  const fetchRooms = useCallback(async () => {
-    try {
-      const data = await getRooms();
-      setRooms(data);
-    } catch (err) {
-      const error = err as Error;
-      addToast(error.message || 'Failed to load rooms', 'error');
-    } finally {
-      setIsLoadingRooms(false);
-    }
-  }, [addToast]);
-
-  const fetchDiscoverRooms = useCallback(async () => {
-    setIsLoadingDiscover(true);
-    try {
-      const data = await getDiscoverRooms();
-      setDiscoverRooms(data);
-    } catch (err) {
-      console.error('Failed to load discovery rooms:', err);
-    } finally {
-      setIsLoadingDiscover(false);
-    }
-  }, []);
-
-  const fetchMembers = useCallback(async (roomId: string) => {
-    try {
-      const members = await getRoomMembers(roomId);
-      setRoomMembers(members);
-    } catch (err) {
-      console.error('Failed to load members:', err);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (currentRoom?.isMember) {
-      fetchMembers(currentRoom.id);
-    } else {
-      setRoomMembers([]);
-    }
-  }, [currentRoom, fetchMembers]);
-
-  useEffect(() => {
-    setTimeout(() => setMounted(true), 0);
-    const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-      setTimeout(() => setIsDarkMode(true), 0);
-      document.documentElement.classList.add('dark');
-      document.documentElement.classList.remove('light');
-    } else {
-      setTimeout(() => setIsDarkMode(false), 0);
-      document.documentElement.classList.add('light');
-      document.documentElement.classList.remove('dark');
-    }
-
-    void (async () => {
-      await fetchRooms();
-    })();
-  }, [fetchRooms]);
+  const {
+    messages,
+    members,
+    sendMessage
+  } = useChat(currentRoom?.id, currentRoom?.isMember);
 
   const handleSelectRoom = (room: Room) => {
     setCurrentRoom(room);
@@ -105,44 +58,37 @@ export default function HomePage() {
 
   const handleCreateRoom = async (name: string) => {
     try {
-      const newRoom = await createRoom(name);
-      const roomWithMembership = { ...newRoom, isMember: true, role: 'owner' };
-      setRooms(prev => [...prev, roomWithMembership]);
-      setCurrentRoom(roomWithMembership);
-      addToast(`Room "${name}" created successfully!`, 'success');
+      const newRoom = await createNewRoom(name);
+      setCurrentRoom(newRoom);
+      setIsCreateModalOpen(false);
     } catch (err) {
-      const error = err as Error;
-      addToast(error.message || 'Failed to create room', 'error');
+      // Error is handled in useRooms
     }
   };
 
-  const toggleTheme = () => {
-    if (isDarkMode) {
-      document.documentElement.classList.remove('dark');
-      document.documentElement.classList.add('light');
-      localStorage.setItem('theme', 'light');
-      setIsDarkMode(false);
-    } else {
-      document.documentElement.classList.add('dark');
-      document.documentElement.classList.remove('light');
-      localStorage.setItem('theme', 'dark');
-      setIsDarkMode(true);
+  const handleJoinRoom = async (roomToJoin?: Room) => {
+    const room = roomToJoin || currentRoom;
+    if (!room) return;
+
+    try {
+      const updatedRoom = await joinExistingRoom(room);
+      setCurrentRoom(updatedRoom);
+      setIsDiscoveryMode(false);
+    } catch (err) {
+      // Error is handled in useRooms
     }
   };
 
   const handleLogout = async () => {
-    // Simulate async logout for UI feedback
     await new Promise(resolve => setTimeout(resolve, 600));
     logout();
     addToast('You have been signed out.', 'info');
-    // Force a full reload to reset App.tsx state completely
     window.location.href = '/login';
   };
 
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-slate-50 to-slate-200 dark:from-slate-900 dark:to-slate-950 relative overflow-hidden font-sans text-slate-900 dark:text-slate-50 transition-colors duration-500">
+    <div className="h-screen flex bg-gradient-to-br from-slate-50 to-slate-200 dark:from-slate-900 dark:to-slate-950 relative overflow-hidden font-sans text-slate-900 dark:text-slate-50 transition-colors duration-500">
       
-      {/* Background Blobs for Visual Aesthetics (Matched with Login/Register) */}
       <div className="absolute top-[10%] left-[20%] w-[400px] h-[400px] bg-blue-500/30 dark:bg-blue-500/15 rounded-full blur-[80px] z-0 animate-pulse pointer-events-none"></div>
       <div className="absolute bottom-[10%] right-[20%] w-[350px] h-[350px] bg-purple-500/30 dark:bg-purple-500/15 rounded-full blur-[80px] z-0 animate-pulse pointer-events-none" style={{ animationDelay: '2s' }}></div>
 
@@ -168,10 +114,8 @@ export default function HomePage() {
         onCreate={handleCreateRoom}
       />
 
-      {/* Main Content */}
       <main className="flex-1 relative flex flex-col z-10 w-full md:w-auto md:bg-white/40 md:dark:bg-slate-800/40 md:backdrop-blur-md">
         
-        {/* Mobile Header */}
         <header className="h-16 border-b border-slate-200/50 dark:border-white/10 flex items-center justify-between px-4 bg-white/40 dark:bg-slate-800/40 backdrop-blur-md md:hidden z-20 sticky top-0">
           <div className="flex items-center gap-3">
              <button
@@ -187,7 +131,6 @@ export default function HomePage() {
           </div>
         </header>
 
-        {/* Desktop Header */}
         <header className="hidden md:flex h-20 items-center justify-between px-8 bg-transparent z-10">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center text-white font-bold text-xl shadow-sm shadow-blue-500/20">
@@ -203,9 +146,9 @@ export default function HomePage() {
             </div>
           </div>
           
-          {!isDiscoveryMode && currentRoom?.isMember && roomMembers.length > 0 && (
+          {!isDiscoveryMode && currentRoom?.isMember && members.length > 0 && (
             <div className="flex -space-x-2 overflow-hidden">
-              {roomMembers.slice(0, 5).map((member) => (
+              {members.slice(0, 5).map((member) => (
                 <div 
                   key={member.user_id} 
                   className="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-slate-800 bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold"
@@ -214,69 +157,67 @@ export default function HomePage() {
                   {member.profiles.username.substring(0, 2).toUpperCase()}
                 </div>
               ))}
-              {roomMembers.length > 5 && (
+              {members.length > 5 && (
                 <div className="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-slate-800 bg-slate-100 dark:bg-slate-600 flex items-center justify-center text-xs font-bold">
-                  +{roomMembers.length - 5}
+                  +{members.length - 5}
                 </div>
               )}
             </div>
           )}
         </header>
 
-        {/* Content Area */}
-        <div className="flex-1 flex flex-col bg-white/50 dark:bg-slate-950/50 md:rounded-tl-[2.5rem] border-t border-slate-200/50 dark:border-white/10 md:border-l overflow-hidden">
-          <div className="flex-1 p-6 md:p-8 overflow-y-auto flex flex-col">
+        <div className="flex-1 flex flex-col bg-white/50 dark:bg-slate-950/50 md:rounded-tl-[2.5rem] border-t border-slate-200/50 dark:border-white/10 md:border-l overflow-hidden min-h-0">
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+
             {isDiscoveryMode ? (
-              <div className="max-w-4xl mx-auto animate-fade-in w-full">
-                <div className="mb-8">
-                  <h2 className="text-3xl font-extrabold mb-2 text-slate-900 dark:text-slate-50">Explore Communities</h2>
-                  <p className="text-slate-500 dark:text-slate-400 text-lg">Discover new rooms and join conversations across the platform.</p>
-                </div>
-                
-                {isLoadingDiscover ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-pulse">
-                    {[1, 2, 3, 4].map(i => (
-                      <div key={i} className="h-32 bg-slate-200 dark:bg-slate-700/50 rounded-2xl"></div>
-                    ))}
+              <div className="flex-1 p-6 md:p-8 overflow-y-auto">
+                <div className="max-w-4xl mx-auto animate-fade-in w-full">
+                  <div className="mb-8">
+                    <h2 className="text-3xl font-extrabold mb-2 text-slate-900 dark:text-slate-50">Explore Communities</h2>
+                    <p className="text-slate-500 dark:text-slate-400 text-lg">Discover new rooms and join conversations across the platform.</p>
                   </div>
-                ) : discoverRooms.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {discoverRooms.map(room => (
-                      <div key={room.id} className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-200/50 dark:border-white/10 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between">
-                        <div>
-                          <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center text-white font-bold text-xl mb-4 shadow-sm">#</div>
-                          <h3 className="text-xl font-bold mb-2 text-slate-900 dark:text-slate-50">{room.name}</h3>
-                          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Join this room to start chatting with its members.</p>
+                  
+                  {isLoadingDiscover ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-pulse">
+                      {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="h-32 bg-slate-200 dark:bg-slate-700/50 rounded-2xl"></div>
+                      ))}
+                    </div>
+                  ) : discoverRooms.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {discoverRooms.map(room => (
+                        <div key={room.id} className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-200/50 dark:border-white/10 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+                          <div>
+                            <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center text-white font-bold text-xl mb-4 shadow-sm">#</div>
+                            <h3 className="text-xl font-bold mb-2 text-slate-900 dark:text-slate-50">{room.name}</h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Join this room to start chatting with its members.</p>
+                          </div>
+                          <AsyncButton
+                            onClick={() => handleJoinRoom(room)}
+                            isLoading={isJoining}
+                            className="w-full bg-blue-500/10 hover:bg-blue-500 text-blue-500 hover:text-white py-2.5 rounded-xl font-bold transition-all duration-300"
+                          >
+                            Join Community
+                          </AsyncButton>
                         </div>
-                        <AsyncButton
-                          onClick={() => handleJoinRoom(room)}
-                          isLoading={isJoining}
-                          className="w-full bg-blue-500/10 hover:bg-blue-500 text-blue-500 hover:text-white py-2.5 rounded-xl font-bold transition-all duration-300"
-                        >
-                          Join Community
-                        </AsyncButton>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-20 bg-white/40 dark:bg-slate-800/40 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700">
-                    <div className="text-4xl mb-4 text-slate-400 italic">✨</div>
-                    <p className="text-lg text-slate-500 dark:text-slate-400">You've joined all available rooms! Try creating a new one.</p>
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-20 bg-white/40 dark:bg-slate-800/40 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700">
+                      <div className="text-4xl mb-4 text-slate-400 italic">✨</div>
+                      <p className="text-lg text-slate-500 dark:text-slate-400">You've joined all available rooms! Try creating a new one.</p>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : currentRoom ? (
                currentRoom.isMember ? (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center animate-fade-in">
-                    <h2 className="text-4xl font-extrabold mb-4 text-slate-900 dark:text-slate-50"># {currentRoom.name}</h2>
-                    <p className="text-slate-500 dark:text-slate-400 mb-6 text-lg">Messages will appear here once implemented.</p>
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-blue-500 text-xs font-bold uppercase tracking-wider">
-                      <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                      {currentRoom.role}
-                    </div>
+                  <div className="flex-1 flex flex-col overflow-hidden">
+                    <MessageList messages={messages} currentUserEmail={user?.email} />
+                    <MessageInput onSendMessage={sendMessage} />
                   </div>
                ) : (
-                  <div className="flex-1 flex items-center justify-center">
+                  <div className="flex-1 flex items-center justify-center p-6 md:p-8">
                     <div className="max-w-md w-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-200/50 dark:border-white/10 rounded-3xl p-8 text-center shadow-xl animate-fade-in-up">
                       <div className="w-16 h-16 bg-blue-500/10 text-blue-500 rounded-2xl mx-auto mb-6 flex items-center justify-center text-3xl">
                         🔒
@@ -296,7 +237,7 @@ export default function HomePage() {
                   </div>
                )
             ) : (
-               <div className="flex-1 flex items-center justify-center">
+               <div className="flex-1 flex items-center justify-center p-6 md:p-8">
                  <div className="max-w-2xl w-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-200/50 dark:border-white/10 rounded-3xl p-8 md:p-12 text-center shadow-2xl animate-fade-in-up">
                    <div className="w-20 h-20 md:w-24 md:h-24 bg-blue-500 rounded-3xl mx-auto mb-6 md:mb-8 flex items-center justify-center text-4xl md:text-5xl shadow-lg shadow-blue-500/30 ring-4 ring-blue-500/20">
                      👋
