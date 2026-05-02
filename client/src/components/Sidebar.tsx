@@ -154,10 +154,8 @@ export default function Sidebar({
         {/* ── UNIFIED RAIL (Utility Area) ── */}
         <div className="w-[68px] flex flex-col items-center py-4 flex-shrink-0 bg-slate-900/5 dark:bg-white/5 h-full border-r border-slate-200/30 dark:border-white/5">
           {/* Brand Mark */}
-          <div className="w-11 h-11 rounded-2xl bg-indigo-500 flex items-center justify-center text-white mb-6 shadow-lg shadow-indigo-500/20 group cursor-pointer transition-transform hover:scale-105 active:scale-95">
-            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19.73 4.87l-3.03-.64a.49.49 0 00-.55.33c-.13.39-.31.87-.43 1.25a18.24 18.24 0 00-5.44 0c-.12-.39-.3-.86-.44-1.25a.48.48 0 00-.55-.33l-3.03.64a.49.49 0 00-.34.37 19.8 19.8 0 00-1.6 8.07c0 .02 0 .04.01.05a18.86 18.86 0 005.65 2.85.49.49 0 00.52-.17c.44-.6.83-1.23 1.17-1.89a.48.48 0 00-.26-.67 12.4 12.4 0 01-1.77-.84.49.49 0 01-.05-.8c.12-.09.24-.18.35-.27a.46.46 0 01.49-.05 13.39 13.39 0 0011.36 0 .46.46 0 01.5.05c.11.09.23.19.35.28a.49.49 0 01-.04.79c-.57.33-1.16.62-1.78.85a.48.48 0 00-.25.67c.35.66.74 1.29 1.17 1.89a.48.48 0 00.52.17 18.81 18.81 0 005.66-2.85.49.49 0 00.01-.06 19.7 19.7 0 00-1.61-8.07.49.49 0 00-.33-.36zM8.68 14.57c-1.02 0-1.86-.93-1.86-2.08s.82-2.08 1.86-2.08 1.88.94 1.86 2.08c0 1.15-.83 2.08-1.86 2.08zm6.64 0c-1.02 0-1.86-.93-1.86-2.08s.82-2.08 1.86-2.08 1.88.94 1.86 2.08c0 1.15-.82 2.08-1.86 2.08z" />
-            </svg>
+          <div className="w-12 h-12 flex items-center justify-center mb-6 group cursor-pointer transition-transform hover:scale-105 active:scale-95">
+            <img src="/Logo.png" alt="Deezcord" className="w-9 h-9 object-contain rounded-xl" />
           </div>
 
           <div className="flex-1 w-full overflow-y-auto scrollbar-none flex flex-col items-center gap-1">

@@ -71,7 +71,10 @@ The client frontend is under active development, focusing heavily on a responsiv
 - [x] Create chat page / Real-time messaging
 - [x] Create chat page / Real-time messaging
 - [x] Turn current sidebar into sidebar component
-- [x] Implement modern "Tray" design with collapsible desktop sidebar
+- [x] Redesign Sidebar to "Unified Glass" aesthetic with squircle icons
 - [x] Implement Room Settings and Member Management
 - [x] Add Typing Indicators and Presence Tracking
-- [ ] Migrate to 2-tier architecture (Servers -> Channels -> Messages)
+- [x] Migrate to 2-tier architecture (Servers -> Channels -> Messages)
+- [x] Integrate and refine brand logo (Logo.png) across all application pages
+- [ ] Add real-time room/channel creation updates to the sidebar (Socket.io)
+- [ ] Redesign Chat area to match Unified Glass aesthetic

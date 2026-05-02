@@ -229,9 +229,12 @@ export default function HomePage() {
                  </h2>
                </div>
              ) : (
-               <h2 className="text-lg font-extrabold tracking-tight text-blue-500 dark:text-blue-400">
-                 {isDiscoveryMode ? 'Discovery' : 'Deezcord'}
-               </h2>
+               <div className="flex items-center gap-2">
+                 <img src="/Logo.png" alt="Deezcord" className="w-8 h-8 object-contain rounded-lg" />
+                 <h2 className="text-lg font-extrabold tracking-tight text-blue-500 dark:text-blue-400">
+                   {isDiscoveryMode ? 'Discovery' : 'Deezcord'}
+                 </h2>
+               </div>
              )}
           </div>
 
@@ -436,14 +439,15 @@ export default function HomePage() {
                   </div>
                )
             ) : (
-               <div className="flex-1 overflow-y-auto p-6 md:p-8">
-                 <div className="min-h-full flex items-center justify-center">
-                   <div className="max-w-2xl w-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-200/50 dark:border-white/10 rounded-3xl p-8 md:p-12 text-center shadow-2xl animate-fade-in-up">
-                     <div className="w-20 h-20 md:w-24 md:h-24 bg-blue-500 rounded-3xl mx-auto mb-6 md:mb-8 flex items-center justify-center text-4xl md:text-5xl shadow-lg shadow-blue-500/30 ring-4 ring-blue-500/20">
-                       👋
-                     </div>
-                     <h2 className="text-2xl md:text-4xl font-extrabold mb-4 tracking-tight text-slate-900 dark:text-slate-50">Welcome to Deezcord</h2>
-                     <p className="text-sm md:text-lg text-slate-500 dark:text-slate-400 mb-8 md:mb-10 leading-relaxed">
+              <div className="flex-1 overflow-y-auto p-6 md:p-8">
+                <div className="min-h-full flex items-center justify-center">
+                  <div className="max-w-2xl w-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-200/50 dark:border-white/10 rounded-3xl p-8 md:p-12 text-center shadow-2xl animate-fade-in-up">
+                    <div className="flex justify-center mb-8 md:mb-10">
+                      <div className="p-1 rounded-[2.5rem] bg-indigo-500/10 ring-1 ring-indigo-500/20 shadow-xl">
+                       <img src="/Logo.png" alt="Deezcord Logo" className="w-24 h-24 md:w-32 md:h-32 object-contain rounded-3xl" />
+                      </div>
+                    </div>
+                    <h2 className="text-2xl md:text-4xl font-extrabold mb-4 tracking-tight text-slate-900 dark:text-slate-50">Welcome to Deezcord</h2>                     <p className="text-sm md:text-lg text-slate-500 dark:text-slate-400 mb-8 md:mb-10 leading-relaxed">
                        You've successfully joined the community! Select a room from the sidebar to start chatting or create a new one to invite your friends.
                      </p>
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">

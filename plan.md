@@ -1,4 +1,4 @@
-# Plan: Implement Discord-like Channel Architecture
+# Plan: Implement Discord-like Channel Architecture (COMPLETED)
 
 ## Background & Motivation
 Currently, messages in Deezcord are tied directly to a `room` (which acts like a Discord server/guild). To match Discord's functionality, we need to allow multiple text channels within a single room so users can categorize their conversations (e.g., `#general`, `#announcements`, `#random`).
