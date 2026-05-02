@@ -64,7 +64,7 @@ export const useSocket = () => {
     }
   }, []);
 
-  const onMessage = useCallback((callback: (data: any) => void) => {
+  const onMessage = useCallback((callback: (data: unknown) => void) => {
     if (socketRef.current) {
       socketRef.current.on('receive_message', callback);
     }
@@ -97,5 +97,27 @@ export const useSocket = () => {
     };
   }, []);
 
-  return { isConnected, joinRoom, leaveRoom, sendMessage, startTyping, stopTyping, onMessage, onTyping, onPresenceUpdate };
+  const onRoomCreated = useCallback((callback: (data: unknown) => void) => {
+    if (socketRef.current) {
+      socketRef.current.on('room_created', callback);
+    }
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off('room_created', callback);
+      }
+    };
+  }, []);
+
+  const onChannelCreated = useCallback((callback: (data: unknown) => void) => {
+    if (socketRef.current) {
+      socketRef.current.on('channel_created', callback);
+    }
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off('channel_created', callback);
+      }
+    };
+  }, []);
+
+  return { isConnected, joinRoom, leaveRoom, sendMessage, startTyping, stopTyping, onMessage, onTyping, onPresenceUpdate, onRoomCreated, onChannelCreated };
 };

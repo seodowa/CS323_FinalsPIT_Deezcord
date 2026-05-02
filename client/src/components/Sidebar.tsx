@@ -121,11 +121,12 @@ export default function Sidebar({
 
   const currentRoom = rooms.find(r => r.id === currentRoomId);
 
-  // Reset creation mode when switching rooms
-  useEffect(() => {
+  const [prevRoomId, setPrevRoomId] = useState(currentRoomId);
+  if (currentRoomId !== prevRoomId) {
     setIsCreatingChannelMode(false);
     setNewChannelName('');
-  }, [currentRoomId]);
+    setPrevRoomId(currentRoomId);
+  }
 
   const handleCreateChannelSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -303,7 +304,9 @@ export default function Sidebar({
                     <button
                       key={channel.id}
                       onClick={() => onSelectChannel(channel)}
-                      className={`w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                      className={`w-full group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-500 ${
+                        channel.isNew ? 'animate-slide-down bg-indigo-500/5 ring-1 ring-indigo-500/20 shadow-sm' : ''
+                      } ${
                         currentChannelId === channel.id
                           ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
                           : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white'

@@ -76,5 +76,5 @@ The client frontend is under active development, focusing heavily on a responsiv
 - [x] Add Typing Indicators and Presence Tracking
 - [x] Migrate to 2-tier architecture (Servers -> Channels -> Messages)
 - [x] Integrate and refine brand logo (Logo.png) across all application pages
-- [ ] Add real-time room/channel creation updates to the sidebar (Socket.io)
+- [x] Add real-time room/channel creation updates to the sidebar (Socket.io)
 - [ ] Redesign Chat area to match Unified Glass aesthetic

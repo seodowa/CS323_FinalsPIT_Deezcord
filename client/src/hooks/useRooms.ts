@@ -75,6 +75,7 @@ export const useRooms = () => {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchRooms();
   }, [fetchRooms]);
 

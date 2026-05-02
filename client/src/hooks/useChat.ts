@@ -19,7 +19,9 @@ export const useChat = (roomId: string | undefined, channelId: string | undefine
     stopTyping: socketStopTyping,
     onMessage,
     onTyping,
-    onPresenceUpdate
+    onPresenceUpdate,
+    onRoomCreated,
+    onChannelCreated
   } = useSocket();
 
   const fetchMembers = useCallback(async (id: string) => {
@@ -35,7 +37,7 @@ export const useChat = (roomId: string | undefined, channelId: string | undefine
     setIsLoadingMessages(true);
     try {
       const data = await getMessages(rId, cId);
-      console.log(`[Debug] Fetched ${data.length} messages. Messages with avatars:`, data.filter((m: any) => m.avatar_url).length);
+      console.log(`[Debug] Fetched ${data.length} messages. Messages with avatars:`, data.filter((m: unknown) => (m as { avatar_url?: string }).avatar_url).length);
       setMessages(data);
     } catch (err) {
       console.error('Failed to load messages:', err);
@@ -46,6 +48,7 @@ export const useChat = (roomId: string | undefined, channelId: string | undefine
 
   useEffect(() => {
     if (roomId && isMember) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchMembers(roomId);
       if (channelId) {
         fetchMessages(roomId, channelId);
@@ -159,6 +162,8 @@ export const useChat = (roomId: string | undefined, channelId: string | undefine
     sendMessage,
     startTyping,
     stopTyping,
-    fetchMembers
+    fetchMembers,
+    onRoomCreated,
+    onChannelCreated
   };
 };

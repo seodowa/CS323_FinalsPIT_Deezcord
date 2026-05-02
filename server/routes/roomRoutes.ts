@@ -195,6 +195,11 @@ router.post('/', verifyUser, upload.single('file'), async (req: AuthenticatedReq
     return;
   }
 
+  const io = req.app.get('io');
+  if (io) {
+    io.emit('room_created', roomData);
+  }
+
   res.status(201).json(roomData); 
 });
 

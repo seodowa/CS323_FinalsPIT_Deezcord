@@ -4,6 +4,7 @@ export interface Channel {
   name: string;
   type: string;
   created_at: string;
+  isNew?: boolean;
 }
 
 export interface Room {
@@ -12,6 +13,7 @@ export interface Room {
   room_profile?: string;
   isMember?: boolean;
   role?: string | null;
+  isNew?: boolean;
 }
 
 export interface Member {

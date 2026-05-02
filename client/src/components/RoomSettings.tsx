@@ -49,8 +49,8 @@ export default function RoomSettings({ room, members, onRoomUpdate, onMemberChan
       onRoomUpdate(updated);
       addToast('Room settings updated!', 'success');
       setSelectedFile(null);
-    } catch (err: any) {
-      addToast(err.message || 'Failed to update room', 'error');
+    } catch (err: unknown) {
+      addToast(err instanceof Error ? err.message : 'Failed to update room', 'error');
     } finally {
       setIsUpdating(false);
     }
@@ -66,8 +66,8 @@ export default function RoomSettings({ room, members, onRoomUpdate, onMemberChan
       addToast(`Added ${inviteEmail} to the room`, 'success');
       setInviteEmail('');
       onMemberChange();
-    } catch (err: any) {
-      addToast(err.message || 'Failed to add member', 'error');
+    } catch (err: unknown) {
+      addToast(err instanceof Error ? err.message : 'Failed to add member', 'error');
     } finally {
       setIsInviting(false);
     }
@@ -81,8 +81,8 @@ export default function RoomSettings({ room, members, onRoomUpdate, onMemberChan
       await kickMember(room.id, userId);
       addToast(`Removed ${username}`, 'info');
       onMemberChange();
-    } catch (err: any) {
-      addToast(err.message || 'Failed to remove member', 'error');
+    } catch (err: unknown) {
+      addToast(err instanceof Error ? err.message : 'Failed to remove member', 'error');
     } finally {
       setKickingId(null);
     }
@@ -101,8 +101,8 @@ export default function RoomSettings({ room, members, onRoomUpdate, onMemberChan
       await leaveRoom(room.id);
       addToast('You have left the room', 'info');
       onLeave();
-    } catch (err: any) {
-      addToast(err.message || 'Failed to leave room', 'error');
+    } catch (err: unknown) {
+      addToast(err instanceof Error ? err.message : 'Failed to leave room', 'error');
     } finally {
       setIsLeaving(false);
     }

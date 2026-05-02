@@ -36,6 +36,9 @@ const io = new Server(server, {
   },
 });
 
+// Make io accessible to our routers
+app.set('io', io);
+
 // Create custom socket interface extending standard Socket
 interface AuthenticatedSocket extends Socket {
   user?: any;

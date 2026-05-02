@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import { updateProfile, updatePassword } from '../services/authService';
@@ -24,7 +24,8 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (isOpen !== prevIsOpen) {
     if (isOpen && user) {
       setUsername(user.username || '');
       setPreviewUrl(user.avatar_url || null);
@@ -32,7 +33,8 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
       setNewConfirmPassword('');
       setSelectedFile(null);
     }
-  }, [isOpen, user]);
+    setPrevIsOpen(isOpen);
+  }
 
   if (!isOpen) return null;
 
@@ -61,8 +63,8 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
       setUser({ ...user, ...updatedData });
       addToast('Profile updated successfully!', 'success');
       setSelectedFile(null);
-    } catch (err: any) {
-      addToast(err.message || 'Failed to update profile', 'error');
+    } catch (err: unknown) {
+      addToast(err instanceof Error ? err.message : 'Failed to update profile', 'error');
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -84,8 +86,8 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
       addToast('Password updated successfully!', 'success');
       setNewPassword('');
       setNewConfirmPassword('');
-    } catch (err: any) {
-      addToast(err.message || 'Failed to update password', 'error');
+    } catch (err: unknown) {
+      addToast(err instanceof Error ? err.message : 'Failed to update password', 'error');
     } finally {
       setIsUpdatingPassword(false);
     }

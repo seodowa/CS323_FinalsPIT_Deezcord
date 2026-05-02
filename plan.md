@@ -42,3 +42,35 @@ Execute the SQL detailed in `migration_plan.md`:
 - Create a new channel in the room.
 - Send messages in `#general` and the new channel; verify they do not overlap.
 - Reload the app and verify message history is fetched correctly per channel.
+
+---
+
+# Plan: Real-time Room & Channel Creation Updates
+
+## Background & Motivation
+Currently, users must manually refresh to see newly created rooms in the Discovery tab, or newly created channels in their current room. We need to push these updates in real-time via Socket.io to ensure a seamless, "live" feel to the application that matches the Unified Glass aesthetic.
+
+## Scope & Impact
+- **Backend (`server/`)**: Expose the Socket.io instance to Express routes. Emit `room_created` on new room creation and `channel_created` on new channel creation.
+- **Frontend (`client/`)**: Update socket hooks to listen for these events. Update local state for `discoverRooms` and `channels` to react to these events. Introduce "Impeccable" UI micro-animations for incoming items.
+
+## Proposed Solution
+
+### 1. Backend Updates (`server/`)
+- **`server/index.ts`**: Attach the Socket.io `io` instance to the Express app using `app.set('io', io)`.
+- **`server/routes/roomRoutes.ts`**:
+  - In `POST /rooms` (create room): Retrieve `req.app.get('io')` and emit a global `room_created` event with the new room data.
+  - In `POST /rooms/:roomId/channels` (create channel): Retrieve `req.app.get('io')` and emit a `channel_created` event specifically to the users currently viewing the room using `io.to(roomId).emit(...)`.
+
+### 2. Frontend Updates (`client/`) - "Impeccable UI"
+- **`client/src/hooks/useSocket.ts`**: Add typed event listeners for `room_created` and `channel_created`.
+- **`client/src/hooks/useRooms.ts`**: Subscribe to `room_created`. If the newly created room is not authored by the current user, insert it into the `discoverRooms` state dynamically.
+- **`client/src/pages/Home.tsx`**: Subscribe to `channel_created`. If the `channel.room_id` matches the active `currentRoom.id`, append it to the `channels` list.
+- **Micro-Interactions (Impeccable Skill)**:
+  - **Sidebar Channels**: Wrap the channel list in an animation presence handler (or use simple CSS transitions). When a new channel appears, it should expand its height from 0 to full and fade in (`animate-fade-in-up`), avoiding jarring layout shifts. We can add a brief subtle highlight (e.g., a faint indigo flash) to draw the user's eye to the new channel.
+  - **Discovery Rooms**: Similar grid entry animations. When a new room card is added to the discovery grid, it should pop in smoothly rather than instantly appearing.
+
+## Verification
+- User A creates a new room. User B (on the Discovery tab) sees the room appear instantly with a smooth animation.
+- User A creates a new channel in "Room X". User B (currently viewing "Room X") sees the new channel smoothly slide into their sidebar.
+- Ensure the server correctly targets only the users in "Room X" when emitting the channel creation event.

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import CreateRoomModal from '../components/CreateRoomModal';
 import AsyncButton from '../components/AsyncButton';
@@ -31,6 +31,7 @@ export default function HomePage() {
     rooms, 
     setRooms,
     discoverRooms, 
+    setDiscoverRooms,
     isLoadingRooms, 
     isLoadingDiscover, 
     isCreatingRoom, 
@@ -47,8 +48,38 @@ export default function HomePage() {
     sendMessage,
     startTyping,
     stopTyping,
-    fetchMembers
+    fetchMembers,
+    onRoomCreated,
+    onChannelCreated
   } = useChat(currentRoom?.id, currentChannel?.id, currentRoom?.isMember);
+
+  useEffect(() => {
+    const unsubscribe = onRoomCreated((newRoom: Room) => {
+      setRooms(prevRooms => {
+        if (!prevRooms.some(r => r.id === newRoom.id)) {
+          setDiscoverRooms(prevDiscover => {
+            if (prevDiscover.some(r => r.id === newRoom.id)) return prevDiscover;
+            return [...prevDiscover, { ...newRoom, isNew: true }];
+          });
+        }
+        return prevRooms;
+      });
+    });
+    return unsubscribe;
+  }, [onRoomCreated, setRooms, setDiscoverRooms]);
+
+  useEffect(() => {
+    const unsubscribe = onChannelCreated((newChannel: Channel) => {
+      setChannels(prev => {
+        if (currentRoom?.id === newChannel.room_id) {
+          if (prev.some(c => c.id === newChannel.id)) return prev;
+          return [...prev, { ...newChannel, isNew: true }];
+        }
+        return prev;
+      });
+    });
+    return unsubscribe;
+  }, [onChannelCreated, currentRoom?.id]);
 
   const fetchRoomChannels = async (roomId: string) => {
     try {
@@ -108,7 +139,7 @@ export default function HomePage() {
       // New rooms will eventually get a general channel via triggers/backend,
       // but let's fetch anyway.
       await fetchRoomChannels(newRoom.id);
-    } catch (err) {
+    } catch {
       // Error is handled in useRooms
     }
   };
@@ -118,11 +149,12 @@ export default function HomePage() {
     setIsCreatingChannel(true);
     try {
       const newChannel = await createChannel(currentRoom.id, name);
-      setChannels(prev => [...prev, newChannel]);
-      setCurrentChannel(newChannel);
+      setChannels(prev => [...prev, newChannel as Channel]);
+      setCurrentChannel(newChannel as Channel);
       addToast(`Channel "#${name}" created!`, 'success');
-    } catch (err: any) {
-      addToast(err.message || 'Failed to create channel', 'error');
+    } catch (err: unknown) {
+      const error = err as Error;
+      addToast(error.message || 'Failed to create channel', 'error');
     } finally {
       setIsCreatingChannel(false);
     }
@@ -138,7 +170,7 @@ export default function HomePage() {
       setIsDiscoveryMode(false);
       setIsSettingsView(false);
       await fetchRoomChannels(updatedRoom.id);
-    } catch (err) {
+    } catch {
       // Error is handled in useRooms
     }
   };
@@ -347,7 +379,9 @@ export default function HomePage() {
                   ) : discoverRooms.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {discoverRooms.map(room => (
-                        <div key={room.id} className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-200/50 dark:border-white/10 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+                        <div key={room.id} className={`bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-200/50 dark:border-white/10 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-500 flex flex-col justify-between ${
+                          room.isNew ? 'animate-fade-in-up ring-2 ring-indigo-500/30 bg-indigo-50/50 dark:bg-indigo-900/10' : ''
+                        }`}>
                           <div>
                             <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-xl mb-4 shadow-sm overflow-hidden ${
                               room.room_profile ? '' : 'bg-blue-500'

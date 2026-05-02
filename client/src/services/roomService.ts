@@ -87,7 +87,7 @@ export const joinRoom = async (roomId: string): Promise<void> => {
   }
 };
 
-export const getRoomMembers = async (roomId: string): Promise<any[]> => {
+export const getRoomMembers = async (roomId: string): Promise<unknown[]> => {
   const token = getToken();
   if (!token) throw new Error('Not authenticated');
 
@@ -106,7 +106,7 @@ export const getRoomMembers = async (roomId: string): Promise<any[]> => {
   return data;
 };
 
-export const getChannels = async (roomId: string): Promise<any[]> => {
+export const getChannels = async (roomId: string): Promise<unknown[]> => {
   const token = getToken();
   if (!token) throw new Error('Not authenticated');
 
@@ -125,7 +125,7 @@ export const getChannels = async (roomId: string): Promise<any[]> => {
   return data;
 };
 
-export const createChannel = async (roomId: string, name: string, type: string = 'text'): Promise<any> => {
+export const createChannel = async (roomId: string, name: string, type: string = 'text'): Promise<unknown> => {
   const token = getToken();
   if (!token) throw new Error('Not authenticated');
 
@@ -147,7 +147,7 @@ export const createChannel = async (roomId: string, name: string, type: string =
   return data;
 };
 
-export const getMessages = async (roomId: string, channelId: string): Promise<any> => {
+export const getMessages = async (roomId: string, channelId: string): Promise<unknown> => {
   const token = getToken();
   if (!token) throw new Error('Not authenticated');
 
