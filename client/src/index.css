@@ -12,6 +12,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --transition-timing-function-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Base dark mode variables for when .dark is present */
