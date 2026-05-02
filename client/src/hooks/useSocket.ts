@@ -108,6 +108,17 @@ export const useSocket = () => {
     };
   }, []);
 
+  const onRoomDeleted = useCallback((callback: (roomId: string) => void) => {
+    if (socketRef.current) {
+      socketRef.current.on('room_deleted', callback);
+    }
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off('room_deleted', callback);
+      }
+    };
+  }, []);
+
   const onChannelCreated = useCallback((callback: (data: unknown) => void) => {
     if (socketRef.current) {
       socketRef.current.on('channel_created', callback);
@@ -119,5 +130,5 @@ export const useSocket = () => {
     };
   }, []);
 
-  return { isConnected, joinRoom, leaveRoom, sendMessage, startTyping, stopTyping, onMessage, onTyping, onPresenceUpdate, onRoomCreated, onChannelCreated };
+  return { isConnected, joinRoom, leaveRoom, sendMessage, startTyping, stopTyping, onMessage, onTyping, onPresenceUpdate, onRoomCreated, onRoomDeleted, onChannelCreated };
 };

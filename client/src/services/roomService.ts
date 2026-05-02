@@ -243,3 +243,20 @@ export const leaveRoom = async (roomId: string): Promise<void> => {
     throw new Error(data.error || 'Failed to leave room');
   }
 };
+
+export const deleteRoom = async (roomId: string): Promise<void> => {
+  const token = getToken();
+  if (!token) throw new Error('Not authenticated');
+
+  const response = await fetch(`${API_URL}/rooms/${roomId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.error || 'Failed to delete room');
+  }
+};

@@ -78,3 +78,4 @@ The client frontend is under active development, focusing heavily on a responsiv
 - [x] Integrate and refine brand logo (Logo.png) across all application pages
 - [x] Add real-time room/channel creation updates to the sidebar (Socket.io)
 - [ ] Redesign Chat area to match Unified Glass aesthetic
+- [ ] Create a reusable modal component that can be used for anything.

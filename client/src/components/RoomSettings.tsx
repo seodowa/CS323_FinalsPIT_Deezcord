@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import type { Room, Member } from '../types/room';
 import AsyncButton from './AsyncButton';
 import { useToast } from '../hooks/useToast';
-import { updateRoom, addMember, kickMember, leaveRoom } from '../services/roomService';
+import { updateRoom, addMember, kickMember, leaveRoom, deleteRoom } from '../services/roomService';
 
 interface RoomSettingsProps {
   room: Room;
@@ -21,6 +21,7 @@ export default function RoomSettings({ room, members, onRoomUpdate, onMemberChan
   const [isUpdating, setIsUpdating] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [kickingId, setKickingId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -105,6 +106,23 @@ export default function RoomSettings({ room, members, onRoomUpdate, onMemberChan
       addToast(err instanceof Error ? err.message : 'Failed to leave room', 'error');
     } finally {
       setIsLeaving(false);
+    }
+  };
+
+  const handleDeleteRoom = async () => {
+    if (!isOwner) return;
+
+    if (!window.confirm('Are you sure you want to delete this room? This action cannot be undone.')) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteRoom(room.id);
+      addToast('Room deleted successfully', 'success');
+      onLeave(); // We can reuse onLeave to navigate away
+    } catch (err: unknown) {
+      addToast(err instanceof Error ? err.message : 'Failed to delete room', 'error');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -294,6 +312,28 @@ export default function RoomSettings({ room, members, onRoomUpdate, onMemberChan
             </div>
           </div>
         </div>
+
+        {/* Danger Zone (Owner Only) */}
+        {isOwner && (
+          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-red-200/50 dark:border-red-500/20 rounded-3xl p-6 md:p-8 shadow-sm">
+            <h3 className="text-xl font-bold mb-4 text-red-600 dark:text-red-500 flex items-center gap-2">
+              <span className="w-8 h-8 bg-red-500/10 text-red-500 rounded-lg flex items-center justify-center text-sm">⚠️</span>
+              Danger Zone
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed max-w-3xl">
+              Once you delete a room, there is no going back. Please be certain. This will permanently delete the room, all channels, and all messages associated with it.
+            </p>
+            
+            <AsyncButton
+              onClick={handleDeleteRoom}
+              isLoading={isDeleting}
+              className="w-full md:w-auto bg-red-500 hover:bg-red-600 text-white rounded-xl px-8 py-3 font-bold shadow-lg shadow-red-500/30 transition-all duration-300"
+            >
+              Delete Room
+            </AsyncButton>
+          </div>
+        )}
+
       </div>
     </div>
   );

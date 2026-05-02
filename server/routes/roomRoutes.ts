@@ -504,4 +504,39 @@ router.delete('/:roomId/leave', verifyUser, verifyRoomMember, async (req: Authen
   res.status(200).json({ message: "Successfully left the room" });
 });
 
+// DELETE /rooms/:roomId - Delete a room (OWNER ONLY)
+router.delete('/:roomId', verifyUser, verifyRoomOwner, async (req: AuthenticatedRequest, res: Response) => {
+  const { roomId } = req.params;
+
+  // 1. Manually delete all room members first (due to ON DELETE NO ACTION constraint)
+  const { error: membersError } = await supabase
+    .from('room_members')
+    .delete()
+    .eq('room_id', roomId);
+
+  if (membersError) {
+    res.status(500).json({ error: "Failed to delete room members: " + membersError.message });
+    return;
+  }
+
+  // 2. Delete the room itself (channels and messages will CASCADE)
+  const { error: roomError } = await supabase
+    .from('rooms')
+    .delete()
+    .eq('id', roomId);
+
+  if (roomError) {
+    res.status(500).json({ error: "Failed to delete room: " + roomError.message });
+    return;
+  }
+
+  // 3. Emit real-time event to clients
+  const io = req.app.get('io');
+  if (io) {
+    io.to(roomId).emit('room_deleted', roomId);
+  }
+
+  res.status(200).json({ message: "Room deleted successfully" });
+});
+
 export default router;

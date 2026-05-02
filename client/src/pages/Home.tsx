@@ -50,11 +50,13 @@ export default function HomePage() {
     stopTyping,
     fetchMembers,
     onRoomCreated,
+    onRoomDeleted,
     onChannelCreated
   } = useChat(currentRoom?.id, currentChannel?.id, currentRoom?.isMember);
 
   useEffect(() => {
-    const unsubscribe = onRoomCreated((newRoom: Room) => {
+    const unsubscribe = onRoomCreated((data: unknown) => {
+      const newRoom = data as Room;
       setRooms(prevRooms => {
         if (!prevRooms.some(r => r.id === newRoom.id)) {
           setDiscoverRooms(prevDiscover => {
@@ -69,7 +71,24 @@ export default function HomePage() {
   }, [onRoomCreated, setRooms, setDiscoverRooms]);
 
   useEffect(() => {
-    const unsubscribe = onChannelCreated((newChannel: Channel) => {
+    const unsubscribe = onRoomDeleted((deletedRoomId: string) => {
+      setRooms(prevRooms => prevRooms.filter(r => r.id !== deletedRoomId));
+      setDiscoverRooms(prevDiscover => prevDiscover.filter(r => r.id !== deletedRoomId));
+      
+      if (currentRoom?.id === deletedRoomId) {
+        setCurrentRoom(null);
+        setCurrentChannel(null);
+        setChannels([]);
+        setIsSettingsView(false);
+        addToast('This room has been deleted by the owner.', 'info');
+      }
+    });
+    return unsubscribe;
+  }, [onRoomDeleted, currentRoom?.id, setRooms, setDiscoverRooms, addToast]);
+
+  useEffect(() => {
+    const unsubscribe = onChannelCreated((data: unknown) => {
+      const newChannel = data as Channel;
       setChannels(prev => {
         if (currentRoom?.id === newChannel.room_id) {
           if (prev.some(c => c.id === newChannel.id)) return prev;
@@ -83,7 +102,8 @@ export default function HomePage() {
 
   const fetchRoomChannels = async (roomId: string) => {
     try {
-      const channelData = await getChannels(roomId);
+      const data = await getChannels(roomId);
+      const channelData = data as Channel[];
       setChannels(channelData);
       if (channelData.length > 0) {
         // If we already have a channel selected for another room, it will be overridden here.

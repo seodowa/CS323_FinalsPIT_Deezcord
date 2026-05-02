@@ -21,13 +21,14 @@ export const useChat = (roomId: string | undefined, channelId: string | undefine
     onTyping,
     onPresenceUpdate,
     onRoomCreated,
+    onRoomDeleted,
     onChannelCreated
   } = useSocket();
 
   const fetchMembers = useCallback(async (id: string) => {
     try {
       const data = await getRoomMembers(id);
-      setMembers(data);
+      setMembers(data as Member[]);
     } catch (err) {
       console.error('Failed to load members:', err);
     }
@@ -37,8 +38,9 @@ export const useChat = (roomId: string | undefined, channelId: string | undefine
     setIsLoadingMessages(true);
     try {
       const data = await getMessages(rId, cId);
-      console.log(`[Debug] Fetched ${data.length} messages. Messages with avatars:`, data.filter((m: unknown) => (m as { avatar_url?: string }).avatar_url).length);
-      setMessages(data);
+      const messageData = data as Message[];
+      console.log(`[Debug] Fetched ${messageData.length} messages. Messages with avatars:`, messageData.filter((m) => m.avatar_url).length);
+      setMessages(messageData);
     } catch (err) {
       console.error('Failed to load messages:', err);
     } finally {
@@ -73,7 +75,8 @@ export const useChat = (roomId: string | undefined, channelId: string | undefine
   }, [roomId, channelId, isMember, fetchMembers, fetchMessages, socketJoinRoom, socketLeaveRoom]);
 
   useEffect(() => {
-    const unsubscribe = onMessage((newMessage) => {
+    const unsubscribe = onMessage((data: unknown) => {
+      const newMessage = data as Message;
       if (newMessage.room_id === roomId && newMessage.channel_id === channelId) {
         setMessages(prev => {
           const exists = prev.some(m => m.id === newMessage.id);
@@ -164,6 +167,7 @@ export const useChat = (roomId: string | undefined, channelId: string | undefine
     stopTyping,
     fetchMembers,
     onRoomCreated,
+    onRoomDeleted,
     onChannelCreated
   };
 };

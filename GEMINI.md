@@ -84,4 +84,6 @@ Deezcord is a real-time chat system developed as a Performance Innovative Task f
 - [x] Redesign Sidebar to "Unified Glass" aesthetic with squircle icons.
 - [x] Integrate and refine brand logo (Logo.png) across all application pages.
 - [x] Add real-time room/channel creation updates to the sidebar (Socket.io).
+- [x] Implement room deletion feature for room owners (with confirmation and real-time updates).
 - [ ] Redesign Chat area (MessageList, MessageInput) to match the new Unified Glass aesthetic.
+- [ ] Create a reusable modal component that can be used for anything.
