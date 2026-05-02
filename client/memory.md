@@ -68,6 +68,9 @@ The client frontend is under active development, focusing heavily on a responsiv
 - [ ] Create email verification page
 - [ ] Create MFA modal
 - [x] Integrate Sidebar with backend `GET /rooms` & `POST /rooms`
-- [ ] Create chat page / Real-time messaging
+- [x] Create chat page / Real-time messaging
 - [x] Turn current sidebar into sidebar component
-- [x] Implement modern "Tray" design with collapsible desktop sidebar 
+- [x] Implement modern "Tray" design with collapsible desktop sidebar
+- [x] Implement Room Settings and Member Management
+- [x] Add Typing Indicators and Presence Tracking
+- [ ] Migrate to 2-tier architecture (Servers -> Channels -> Messages)
