@@ -1,41 +1,44 @@
-# Deezcord Frontend Implementation Plan
+# Plan: Implement Discord-like Channel Architecture (COMPLETED)
 
-This document tracks the progress of tasks outlined in `client/memory.md`.
+## Background & Motivation
+Currently, messages in Deezcord are tied directly to a `room` (which acts like a Discord server/guild). To match Discord's functionality, we need to allow multiple text channels within a single room so users can categorize their conversations (e.g., `#general`, `#announcements`, `#random`).
 
-## Phase 1: Authentication & Routing
-- [x] **Connect login page to auth service**
-  - Implement a `login` function in `client/src/services/authService.ts` that supports both email and username for login.
-  - Update `client/src/pages/Login.tsx` to use `client/src/services/authService.ts`.
-  - Handle success/error states utilizing `AsyncButton` and `useToast`.
-- [x] **Setup protected routes**
-  - Create a `ProtectedRoute` component inline in `client/src/App.tsx`.
-  - Update `client/src/App.tsx` to wrap authenticated routes (e.g., Home, Rooms, Chat) with the `ProtectedRoute`.
-- [ ] **Create email verification page**
-  - Add `client/src/pages/EmailVerification.tsx`.
-  - Add the route to `client/src/App.tsx`.
-- [ ] **Create MFA modal**
-  - Create `client/src/components/MFAModal.tsx`.
-  - Integrate it into the login/auth flow.
+## Scope & Impact
+- **Documentation:** The first step of implementation will be copying this plan into `plan.md` and the database migration plan into `migration_plan.md` in the project root directory.
+- **Database:** Supabase schema updates as detailed in `migration_plan.md`.
+- **Backend (`server/`):** New REST endpoints for channel management, updated message endpoints, and revised Socket.io logic.
+- **Frontend (`client/`):** UI updates to the Sidebar to display channels, Chat area updates to fetch/send messages by channel.
 
-## Phase 2: Layout & Navigation
-- [x] **Turn current sidebar into sidebar component**
-  - Extracted sidebar logic into `client/src/components/Sidebar.tsx`.
-  - Implemented collapsible desktop view and mobile off-canvas drawer.
-  - Applied the "Tray" layout with glassmorphic shell.
+## Proposed Solution
 
-## Phase 3: Core Features
-- [x] **Integrate rooms with backend**
-  - Created `client/src/services/roomService.ts`.
-  - Connected Sidebar to `GET /rooms` and `POST /rooms`.
-  - Implemented room selection state in `Home.tsx`.
-- [x] **Enhance Room Experience**
-  - [x] Modify `rooms` schema to include `room_profile` (database column).
-  - [x] Create a private Supabase Storage bucket for room profiles.
-  - [x] Implement a custom, high-quality Room Creation Modal (replacing the browser prompt).
-  - [x] Wire up `CreateRoomModal` to backend with file upload support.
-  - [x] Update `roomService`, `useRooms`, and `Home` to handle multipart/form-data.
-  - [x] Ensure `Sidebar` displays the room profile picture correctly.
-- [ ] **Create chat page / Real-time messaging**
-  - Implement message history fetching (`GET /rooms/:roomId/messages`).
-  - Integrate Socket.io for real-time message broadcasting.
-  - Build the chat interface within the content tray.
+### 0. Documentation Update
+- **Update `plan.md`**: Copy this approved plan into the project root's `plan.md`.
+- **Update `migration_plan.md`**: Copy the database migration details into the project root's `migration_plan.md`.
+
+### 1. Database Schema Changes
+Execute the SQL detailed in `migration_plan.md`:
+- Create `channels` table with RLS policies.
+- Backfill `channels` with a `#general` channel for each existing room.
+- Add `channel_id` to `messages` and backfill existing messages.
+
+### 2. Backend Updates (`server/`)
+- **REST API (`routes/roomRoutes.ts`)**:
+  - `GET /rooms/:roomId/channels`
+  - `POST /rooms/:roomId/channels`
+  - Update `GET /rooms/:roomId/messages` to `GET /channels/:channelId/messages`.
+- **WebSockets (`index.ts`)**:
+  - Update `join_room` to use `channel:${channelId}` instead of `room:${roomId}`.
+  - Route `send_message` to the appropriate channel.
+
+### 3. Frontend Updates (`client/`)
+- **Types (`client/src/types/`)**:
+  - Add `Channel` interface. Update `Message` and `SendMessagePayload` to use `channel_id`.
+- **UI Components**:
+  - `Sidebar.tsx`: Show channels.
+  - `MessageList.tsx` & `MessageInput.tsx`: Tie logic to `channel_id`.
+
+## Verification
+- Create a new room; verify it automatically gets a `#general` channel.
+- Create a new channel in the room.
+- Send messages in `#general` and the new channel; verify they do not overlap.
+- Reload the app and verify message history is fetched correctly per channel.

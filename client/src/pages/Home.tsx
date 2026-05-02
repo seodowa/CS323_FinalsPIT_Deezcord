@@ -5,19 +5,23 @@ import AsyncButton from '../components/AsyncButton';
 import MessageList from '../components/MessageList';
 import MessageInput from '../components/MessageInput';
 import RoomSettings from '../components/RoomSettings';
-import type { Room } from '../types/room';
+import type { Room, Channel } from '../types/room';
 import { useToast } from '../hooks/useToast';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import { useRooms } from '../hooks/useRooms';
 import { useChat } from '../hooks/useChat';
+import { getChannels, createChannel } from '../services/roomService';
 
 export default function HomePage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [currentRoom, setCurrentRoom] = useState<Room | null>(null);
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [currentChannel, setCurrentChannel] = useState<Channel | null>(null);
   const [isDiscoveryMode, setIsDiscoveryMode] = useState(false);
   const [isSettingsView, setIsSettingsView] = useState(false);
+  const [isCreatingChannel, setIsCreatingChannel] = useState(false);
   
   const { addToast } = useToast();
   const { logout, user } = useAuth();
@@ -44,18 +48,48 @@ export default function HomePage() {
     startTyping,
     stopTyping,
     fetchMembers
-  } = useChat(currentRoom?.id, currentRoom?.isMember);
+  } = useChat(currentRoom?.id, currentChannel?.id, currentRoom?.isMember);
+
+  const fetchRoomChannels = async (roomId: string) => {
+    try {
+      const channelData = await getChannels(roomId);
+      setChannels(channelData);
+      if (channelData.length > 0) {
+        // If we already have a channel selected for another room, it will be overridden here.
+        setCurrentChannel(channelData[0]);
+      } else {
+        setCurrentChannel(null);
+      }
+    } catch (err) {
+      console.error('Failed to load channels', err);
+      setChannels([]);
+      setCurrentChannel(null);
+    }
+  };
 
   const handleSelectRoom = (room: Room) => {
     setCurrentRoom(room);
     setIsDiscoveryMode(false);
     setIsSettingsView(false);
     setIsMobileMenuOpen(false);
+    if (room.isMember) {
+      fetchRoomChannels(room.id);
+    } else {
+      setChannels([]);
+      setCurrentChannel(null);
+    }
+  };
+
+  const handleSelectChannel = (channel: Channel) => {
+    setCurrentChannel(channel);
+    setIsMobileMenuOpen(false);
   };
 
   const handleDiscoverRoom = () => {
     setIsDiscoveryMode(true);
     setCurrentRoom(null);
+    setCurrentChannel(null);
+    setChannels([]);
     setIsSettingsView(false);
     setIsMobileMenuOpen(false);
     fetchDiscoverRooms();
@@ -71,8 +105,26 @@ export default function HomePage() {
       setCurrentRoom(newRoom);
       setIsSettingsView(false);
       setIsCreateModalOpen(false);
+      // New rooms will eventually get a general channel via triggers/backend,
+      // but let's fetch anyway.
+      await fetchRoomChannels(newRoom.id);
     } catch (err) {
       // Error is handled in useRooms
+    }
+  };
+
+  const handleCreateChannel = async (name: string) => {
+    if (!currentRoom) return;
+    setIsCreatingChannel(true);
+    try {
+      const newChannel = await createChannel(currentRoom.id, name);
+      setChannels(prev => [...prev, newChannel]);
+      setCurrentChannel(newChannel);
+      addToast(`Channel "#${name}" created!`, 'success');
+    } catch (err: any) {
+      addToast(err.message || 'Failed to create channel', 'error');
+    } finally {
+      setIsCreatingChannel(false);
     }
   };
 
@@ -85,6 +137,7 @@ export default function HomePage() {
       setCurrentRoom(updatedRoom);
       setIsDiscoveryMode(false);
       setIsSettingsView(false);
+      await fetchRoomChannels(updatedRoom.id);
     } catch (err) {
       // Error is handled in useRooms
     }
@@ -99,6 +152,8 @@ export default function HomePage() {
     if (currentRoom) {
       setRooms(prev => prev.filter(r => r.id !== currentRoom.id));
       setCurrentRoom(null);
+      setCurrentChannel(null);
+      setChannels([]);
       setIsSettingsView(false);
     }
   };
@@ -118,7 +173,9 @@ export default function HomePage() {
 
       <Sidebar 
         rooms={rooms}
+        channels={channels}
         currentRoomId={currentRoom?.id}
+        currentChannelId={currentChannel?.id}
         isDarkMode={isDarkMode}
         mounted={mounted}
         isOpen={isMobileMenuOpen}
@@ -126,10 +183,14 @@ export default function HomePage() {
         onLogout={handleLogout}
         onClose={() => setIsMobileMenuOpen(false)}
         onSelectRoom={handleSelectRoom}
+        onSelectChannel={handleSelectChannel}
         onCreateRoom={handleOpenCreateModal}
+        onCreateChannel={handleCreateChannel}
         onDiscoverRoom={handleDiscoverRoom}
         isLoadingRooms={isLoadingRooms}
         isCreatingRoom={isCreatingRoom}
+        isCreatingChannel={isCreatingChannel}
+        userRole={currentRoom?.role || null}
       />
 
       <CreateRoomModal
@@ -164,13 +225,16 @@ export default function HomePage() {
                    )}
                  </div>
                  <h2 className="text-base font-bold text-slate-900 dark:text-slate-50 truncate">
-                   {currentRoom.name}
+                   {currentChannel ? `#${currentChannel.name}` : currentRoom.name}
                  </h2>
                </div>
              ) : (
-               <h2 className="text-lg font-extrabold tracking-tight text-blue-500 dark:text-blue-400">
-                 {isDiscoveryMode ? 'Discovery' : 'Deezcord'}
-               </h2>
+               <div className="flex items-center gap-2">
+                 <img src="/Logo.png" alt="Deezcord" className="w-8 h-8 object-contain rounded-lg" />
+                 <h2 className="text-lg font-extrabold tracking-tight text-blue-500 dark:text-blue-400">
+                   {isDiscoveryMode ? 'Discovery' : 'Deezcord'}
+                 </h2>
+               </div>
              )}
           </div>
 
@@ -206,8 +270,15 @@ export default function HomePage() {
               <h1 className="text-lg font-bold text-slate-900 dark:text-slate-50">
                 {isDiscoveryMode ? 'Discover Rooms' : (currentRoom ? currentRoom.name : 'Select a Room')}
               </h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                {isDiscoveryMode ? 'Find new communities to join' : (currentRoom ? (currentRoom.isMember ? `Chatting in ${currentRoom.name}` : `Not a member of ${currentRoom.name}`) : 'Join the conversation')}
+              <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                {isDiscoveryMode ? 'Find new communities to join' : (currentRoom ? (currentRoom.isMember ? (
+                  <>
+                    <span>Chatting in</span>
+                    {currentChannel && (
+                      <span className="font-semibold text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded">#{currentChannel.name}</span>
+                    )}
+                  </>
+                ) : `Not a member of ${currentRoom.name}`) : 'Join the conversation')}
               </p>
             </div>
           </div>
@@ -320,17 +391,29 @@ export default function HomePage() {
                     />
                   ) : (
                     <div className="flex-1 flex flex-col overflow-hidden">
-                      <MessageList 
-                        messages={messages} 
-                        members={members}
-                        currentUser={user} 
-                        typingUsers={typingUsers} 
-                      />
-                      <MessageInput 
-                        onSendMessage={sendMessage} 
-                        onStartTyping={startTyping}
-                        onStopTyping={stopTyping}
-                      />
+                      {currentChannel ? (
+                        <>
+                          <MessageList 
+                            messages={messages} 
+                            members={members}
+                            currentUser={user} 
+                            typingUsers={typingUsers} 
+                          />
+                          <MessageInput 
+                            onSendMessage={sendMessage} 
+                            onStartTyping={startTyping}
+                            onStopTyping={stopTyping}
+                          />
+                        </>
+                      ) : (
+                        <div className="flex-1 flex flex-col items-center justify-center text-center opacity-50 p-6">
+                          <div className="text-4xl mb-4">💬</div>
+                          <p>No channel selected or available.</p>
+                          {currentRoom.role === 'owner' && (
+                             <p className="text-sm mt-2">Create a new channel in the sidebar.</p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )
                ) : (
@@ -356,14 +439,15 @@ export default function HomePage() {
                   </div>
                )
             ) : (
-               <div className="flex-1 overflow-y-auto p-6 md:p-8">
-                 <div className="min-h-full flex items-center justify-center">
-                   <div className="max-w-2xl w-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-200/50 dark:border-white/10 rounded-3xl p-8 md:p-12 text-center shadow-2xl animate-fade-in-up">
-                     <div className="w-20 h-20 md:w-24 md:h-24 bg-blue-500 rounded-3xl mx-auto mb-6 md:mb-8 flex items-center justify-center text-4xl md:text-5xl shadow-lg shadow-blue-500/30 ring-4 ring-blue-500/20">
-                       👋
-                     </div>
-                     <h2 className="text-2xl md:text-4xl font-extrabold mb-4 tracking-tight text-slate-900 dark:text-slate-50">Welcome to Deezcord</h2>
-                     <p className="text-sm md:text-lg text-slate-500 dark:text-slate-400 mb-8 md:mb-10 leading-relaxed">
+              <div className="flex-1 overflow-y-auto p-6 md:p-8">
+                <div className="min-h-full flex items-center justify-center">
+                  <div className="max-w-2xl w-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-200/50 dark:border-white/10 rounded-3xl p-8 md:p-12 text-center shadow-2xl animate-fade-in-up">
+                    <div className="flex justify-center mb-8 md:mb-10">
+                      <div className="p-1 rounded-[2.5rem] bg-indigo-500/10 ring-1 ring-indigo-500/20 shadow-xl">
+                       <img src="/Logo.png" alt="Deezcord Logo" className="w-24 h-24 md:w-32 md:h-32 object-contain rounded-3xl" />
+                      </div>
+                    </div>
+                    <h2 className="text-2xl md:text-4xl font-extrabold mb-4 tracking-tight text-slate-900 dark:text-slate-50">Welcome to Deezcord</h2>                     <p className="text-sm md:text-lg text-slate-500 dark:text-slate-400 mb-8 md:mb-10 leading-relaxed">
                        You've successfully joined the community! Select a room from the sidebar to start chatting or create a new one to invite your friends.
                      </p>
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">

@@ -26,8 +26,8 @@ export default function NotFoundPage() {
 
       <div className="relative z-10 w-full max-w-[420px] bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-200/50 dark:border-white/10 rounded-3xl p-10 md:p-12 text-center shadow-2xl animate-fade-in-up">
         
-        <div className="w-24 h-24 bg-red-500 rounded-3xl mx-auto mb-8 flex items-center justify-center text-5xl shadow-lg shadow-red-500/30 ring-4 ring-red-500/20">
-          🤔
+        <div className="flex justify-center mb-8">
+          <img src="/Logo.png" alt="Deezcord" className="w-24 h-24 object-contain opacity-50 grayscale contrast-125" />
         </div>
         
         <h1 className="text-4xl md:text-5xl font-extrabold mb-2 tracking-tight text-slate-900 dark:text-slate-50">
