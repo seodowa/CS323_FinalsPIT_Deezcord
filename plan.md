@@ -35,7 +35,31 @@ This document tracks the progress of tasks outlined in `client/memory.md`.
   - [x] Wire up `CreateRoomModal` to backend with file upload support.
   - [x] Update `roomService`, `useRooms`, and `Home` to handle multipart/form-data.
   - [x] Ensure `Sidebar` displays the room profile picture correctly.
-- [ ] **Create chat page / Real-time messaging**
-  - Implement message history fetching (`GET /rooms/:roomId/messages`).
-  - Integrate Socket.io for real-time message broadcasting.
-  - Build the chat interface within the content tray.
+- [x] **Create chat page / Real-time messaging**
+  - [x] Implement message history fetching (`GET /rooms/:roomId/messages`).
+  - [x] Integrate Socket.io for real-time message broadcasting.
+  - [x] Build the chat interface within the content tray (`MessageList`, `MessageInput`).
+  - [x] Implement optimistic updates for better UX.
+  - [x] Add typing indicators (`typing_start`, `typing_stop`).
+  - [x] Implement real-time presence tracking (Online/Offline status).
+- [x] **Room Management & Settings**
+  - [x] Create `RoomSettings` component for owners.
+  - [x] Implement room name and profile picture updates.
+  - [x] Add member management (adding users by email, kicking members).
+  - [x] Implement "Leave Room" functionality for members.
+
+## Phase 4: Refinement & Advanced Features
+- [ ] **Real-time Discovery Updates**
+  - Broadcast `room_created` events via Socket.io so the Sidebar/Discovery view updates in real-time for all users.
+- [ ] **Advanced Moderation**
+  - Implement profanity filtering on the server.
+  - Add message deletion and editing.
+- [ ] **User Profiles**
+  - Allow users to update their own profiles (username, avatar).
+- [ ] **Security Hardening**
+  - Implement Email Verification flow.
+  - Add Multi-Factor Authentication (MFA) support.
+- [ ] **UI/UX Polish**
+  - Add lazy-loading for message history (pagination).
+  - Implement rich text or markdown support for messages.
+  - Add sound notifications for new messages.
