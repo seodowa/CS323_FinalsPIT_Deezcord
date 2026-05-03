@@ -161,7 +161,9 @@ io.on('connection', (socket: AuthenticatedSocket) => {
           channel_id: data.channel_id,
           user_id: userId, // Persistent UUID
           username: profile?.username || senderName, // Still store username for legacy/snapshot purposes
-          content: data.content 
+          content: data.content,
+          file_url: data.file_url, // Store optional file URL
+          file_name: data.file_name // Store optional file name
         }])
         .select()
         .single();
@@ -177,7 +179,9 @@ io.on('connection', (socket: AuthenticatedSocket) => {
           content: data.content,
           username: profile?.username || senderName,
           created_at: insertedData.created_at,
-          avatar_url: profile?.avatar_url
+          avatar_url: profile?.avatar_url,
+          file_url: data.file_url,
+          file_name: data.file_name
       };
 
       io.to(`channel:${data.channel_id}`).emit('receive_message', broadcastData);
