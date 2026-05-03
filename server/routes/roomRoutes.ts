@@ -89,7 +89,6 @@ router.get('/:roomId/channels/:channelId/messages', verifyUser, verifyRoomMember
   }
 
   // Fetch profiles for these users to get their latest avatars and usernames
-  // We prioritize user_id if available, otherwise fallback to username (for legacy)
   const userIds = Array.from(new Set(messages.map(m => m.user_id).filter(id => id !== null)));
   const usernames = Array.from(new Set(messages.map(m => m.username).filter(u => u !== null)));
 
@@ -104,22 +103,38 @@ router.get('/:roomId/channels/:channelId/messages', verifyUser, verifyRoomMember
     .in('username', usernames);
 
   const messagesWithAvatars = messages.map(msg => {
-    // 1. Try to find by user_id first (most reliable)
     let profile = profilesById?.find(p => p.id === msg.user_id);
-    
-    // 2. If not found (legacy message), try to find by username
     if (!profile) {
       profile = profilesByUsername?.find(p => p.username.toLowerCase() === msg.username.toLowerCase());
     }
 
     return {
       ...msg,
-      username: profile?.username || msg.username, // Update username to current if profile found
+      username: profile?.username || msg.username,
       avatar_url: profile?.avatar_url || null
     };
   });
 
-  res.json(messagesWithAvatars);
+  // Fetch reactions for these messages
+  const { data: allReactions } = await supabase
+    .from('message_reactions')
+    .select('id, message_id, user_id, emoji, profiles(username)')
+    .in('message_id', messages.map(m => m.id));
+
+  const messagesWithReactions = messagesWithAvatars.map(msg => ({
+    ...msg,
+    reactions: (allReactions || [])
+      .filter(r => r.message_id === msg.id)
+      .map(r => ({
+        id: r.id,
+        message_id: r.message_id,
+        user_id: r.user_id,
+        emoji: r.emoji,
+        username: (r as any).profiles?.username
+      }))
+  }));
+
+  res.json(messagesWithReactions);
 });
 
 // POST /rooms - Create a new chat room (PROTECTED)

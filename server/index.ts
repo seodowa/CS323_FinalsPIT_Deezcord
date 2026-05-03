@@ -187,6 +187,86 @@ io.on('connection', (socket: AuthenticatedSocket) => {
     
   });
 
+  socket.on('add_reaction', async (data: any) => {
+    try {
+      const userId = socket.user?.id;
+      if (!userId || !data.message_id || !data.emoji || !data.channel_id) return;
+
+      // Insert reaction
+      const { error } = await supabase
+        .from('message_reactions')
+        .insert([{
+          message_id: data.message_id,
+          user_id: userId,
+          emoji: data.emoji
+        }]);
+
+      if (error && error.code !== '23505') throw error; // Ignore unique constraint violation (already reacted)
+
+      // Fetch all reactions for this message to broadcast the updated state
+      const { data: reactions, error: fetchError } = await supabase
+        .from('message_reactions')
+        .select('id, message_id, user_id, emoji, profiles(username)')
+        .eq('message_id', data.message_id);
+
+      if (fetchError) throw fetchError;
+
+      const formattedReactions = reactions.map((r: any) => ({
+        id: r.id,
+        message_id: r.message_id,
+        user_id: r.user_id,
+        emoji: r.emoji,
+        username: r.profiles?.username
+      }));
+
+      io.to(`channel:${data.channel_id}`).emit('reaction_update', {
+        message_id: data.message_id,
+        reactions: formattedReactions
+      });
+    } catch (error) {
+      console.error("Error adding reaction:", error);
+    }
+  });
+
+  socket.on('remove_reaction', async (data: any) => {
+    try {
+      const userId = socket.user?.id;
+      if (!userId || !data.message_id || !data.emoji || !data.channel_id) return;
+
+      const { error } = await supabase
+        .from('message_reactions')
+        .delete()
+        .eq('message_id', data.message_id)
+        .eq('user_id', userId)
+        .eq('emoji', data.emoji);
+
+      if (error) throw error;
+
+      // Fetch updated reactions
+      const { data: reactions, error: fetchError } = await supabase
+        .from('message_reactions')
+        .select('id, message_id, user_id, emoji, profiles(username)')
+        .eq('message_id', data.message_id);
+
+      if (fetchError) throw fetchError;
+
+      const formattedReactions = reactions.map((r: any) => ({
+        id: r.id,
+        message_id: r.message_id,
+        user_id: r.user_id,
+        emoji: r.emoji,
+        username: r.profiles?.username
+      }));
+
+      io.to(`channel:${data.channel_id}`).emit('reaction_update', {
+        message_id: data.message_id,
+        reactions: formattedReactions
+      });
+    } catch (error) {
+      console.error("Error removing reaction:", error);
+    }
+  });
+
   socket.on('typing_start', (data: any) => {
     const room_id = typeof data === 'string' ? data : data?.room_id;
     const channel_id = typeof data === 'object' ? data?.channel_id : null;
