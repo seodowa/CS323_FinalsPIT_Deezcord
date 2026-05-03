@@ -48,6 +48,7 @@ export default function HomePage() {
     sendMessage,
     startTyping,
     stopTyping,
+    toggleReaction,
     fetchMembers,
     onRoomCreated,
     onRoomDeleted,
@@ -452,6 +453,7 @@ export default function HomePage() {
                             members={members}
                             currentUser={user} 
                             typingUsers={typingUsers} 
+                            onToggleReaction={toggleReaction}
                           />
                           <MessageInput 
                             onSendMessage={sendMessage} 

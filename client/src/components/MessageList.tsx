@@ -1,21 +1,27 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Message } from '../types/message';
 import type { Member } from '../types/room';
+import ReactionList from './ReactionList';
 
 interface MessageListProps {
   messages: Message[];
   members?: Member[];
   currentUser?: { id?: string; username?: string; email?: string } | null;
   typingUsers?: string[];
+  onToggleReaction?: (messageId: string, emoji: string) => void;
 }
+
+const COMMON_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥', '👏', '💯'];
 
 export default function MessageList({ 
   messages, 
   members = [], 
   currentUser, 
-  typingUsers = [] 
+  typingUsers = [],
+  onToggleReaction
 }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [activePickerId, setActivePickerId] = useState<string | null>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -25,6 +31,13 @@ export default function MessageList({
 
   const currentUserId = currentUser?.id;
   const currentUsername = currentUser?.username || currentUser?.email?.split('@')[0] || '';
+
+  // Close picker when clicking elsewhere
+  useEffect(() => {
+    const handleClickOutside = () => setActivePickerId(null);
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, []);
 
   // Helper to find avatar from members list
   const getAvatarForUser = (userId: string | null, username: string, msgAvatar?: string | null) => {
@@ -51,7 +64,7 @@ export default function MessageList({
   return (
     <div 
       ref={scrollRef}
-      className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700"
+      className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700"
     >
       {messages.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-full text-center opacity-50">
@@ -68,11 +81,12 @@ export default function MessageList({
             
             const avatarUrl = getAvatarForUser(msg.user_id, msg.username, msg.avatar_url);
             const displayName = getUsernameForUser(msg.user_id, msg.username);
+            const isPickerOpen = activePickerId === msg.id;
 
             return (
               <div 
                 key={msg.id || `${msg.username}-${msg.created_at}`} 
-                className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}
+                className={`flex gap-3 relative group ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}
               >
                 {/* Avatar */}
                 <div className="flex-shrink-0 mt-1">
@@ -96,15 +110,70 @@ export default function MessageList({
                       {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
-                  <div 
-                    className={`px-4 py-2 rounded-2xl shadow-sm text-sm ${
-                      isOwn 
-                        ? 'bg-blue-500 text-white rounded-tr-none' 
-                        : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 border border-slate-200/50 dark:border-white/10 rounded-tl-none'
-                    }`}
-                  >
-                    {msg.content}
+                  
+                  <div className="relative group/content">
+                    <div 
+                      className={`px-4 py-2 rounded-2xl shadow-sm text-sm break-words ${
+                        isOwn 
+                          ? 'bg-blue-500 text-white rounded-tr-none' 
+                          : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 border border-slate-200/50 dark:border-white/10 rounded-tl-none'
+                      }`}
+                    >
+                      {msg.content}
+                    </div>
+
+                    {/* Reaction Trigger Button - Only visible on hover */}
+                    {onToggleReaction && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActivePickerId(isPickerOpen ? null : msg.id);
+                        }}
+                        className={`absolute top-0 w-8 h-8 flex items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-white/10 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 ${
+                          isOwn ? '-left-10' : '-right-10'
+                        }`}
+                        title="Add reaction"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </button>
+                    )}
+
+                    {/* Reaction Picker Popover */}
+                    {onToggleReaction && isPickerOpen && (
+                      <div 
+                        onClick={(e) => e.stopPropagation()}
+                        className={`absolute -top-12 z-20 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200/50 dark:border-white/10 rounded-full p-1 shadow-xl animate-fade-in-up ${
+                          isOwn ? 'right-0' : 'left-0'
+                        }`}
+                      >
+                        <div className="flex gap-1">
+                          {COMMON_EMOJIS.map(emoji => (
+                            <button
+                              key={emoji}
+                              onClick={() => {
+                                onToggleReaction(msg.id, emoji);
+                                setActivePickerId(null);
+                              }}
+                              className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-white/10 rounded-full transition-colors text-base"
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Reaction List */}
+                  {msg.reactions && msg.reactions.length > 0 && (
+                    <ReactionList 
+                      reactions={msg.reactions} 
+                      currentUserId={currentUserId}
+                      onToggleReaction={(emoji) => onToggleReaction?.(msg.id, emoji)}
+                    />
+                  )}
                 </div>
               </div>
             );

@@ -17,7 +17,10 @@ export const useChat = (roomId: string | undefined, channelId: string | undefine
     sendMessage: socketSendMessage, 
     startTyping: socketStartTyping,
     stopTyping: socketStopTyping,
+    addReaction: socketAddReaction,
+    removeReaction: socketRemoveReaction,
     onMessage,
+    onReactionUpdate,
     onTyping,
     onPresenceUpdate,
     onRoomCreated,
@@ -98,6 +101,18 @@ export const useChat = (roomId: string | undefined, channelId: string | undefine
   }, [onMessage, roomId, channelId]);
 
   useEffect(() => {
+    const unsubscribe = onReactionUpdate((data: any) => {
+      setMessages(prev => prev.map(msg => {
+        if (msg.id === data.message_id) {
+          return { ...msg, reactions: data.reactions };
+        }
+        return msg;
+      }));
+    });
+    return unsubscribe;
+  }, [onReactionUpdate]);
+
+  useEffect(() => {
     const unsubscribe = onTyping((data) => {
       if (data.room_id === roomId && data.channel_id === channelId) {
         setTypingUsers(prev => {
@@ -157,6 +172,19 @@ export const useChat = (roomId: string | undefined, channelId: string | undefine
     }
   }, [roomId, channelId, isMember, socketStopTyping]);
 
+  const toggleReaction = useCallback((messageId: string, emoji: string) => {
+    if (roomId && channelId && isMember && user) {
+      const message = messages.find(m => m.id === messageId);
+      const existingReaction = message?.reactions?.find(r => r.user_id === user.id && r.emoji === emoji);
+
+      if (existingReaction) {
+        socketRemoveReaction({ message_id: messageId, room_id: roomId, channel_id: channelId, emoji });
+      } else {
+        socketAddReaction({ message_id: messageId, room_id: roomId, channel_id: channelId, emoji });
+      }
+    }
+  }, [roomId, channelId, isMember, user, messages, socketAddReaction, socketRemoveReaction]);
+
   return {
     messages,
     members,
@@ -165,6 +193,7 @@ export const useChat = (roomId: string | undefined, channelId: string | undefine
     sendMessage,
     startTyping,
     stopTyping,
+    toggleReaction,
     fetchMembers,
     onRoomCreated,
     onRoomDeleted,
