@@ -64,6 +64,18 @@ export const useSocket = () => {
     }
   }, []);
 
+  const addReaction = useCallback((data: { message_id: string; room_id: string; channel_id: string; emoji: string }) => {
+    if (socketRef.current) {
+      socketRef.current.emit('add_reaction', data);
+    }
+  }, []);
+
+  const removeReaction = useCallback((data: { message_id: string; room_id: string; channel_id: string; emoji: string }) => {
+    if (socketRef.current) {
+      socketRef.current.emit('remove_reaction', data);
+    }
+  }, []);
+
   const onMessage = useCallback((callback: (data: unknown) => void) => {
     if (socketRef.current) {
       socketRef.current.on('receive_message', callback);
@@ -71,6 +83,17 @@ export const useSocket = () => {
     return () => {
       if (socketRef.current) {
         socketRef.current.off('receive_message', callback);
+      }
+    };
+  }, []);
+
+  const onReactionUpdate = useCallback((callback: (data: any) => void) => {
+    if (socketRef.current) {
+      socketRef.current.on('reaction_update', callback);
+    }
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off('reaction_update', callback);
       }
     };
   }, []);
@@ -130,5 +153,21 @@ export const useSocket = () => {
     };
   }, []);
 
-  return { isConnected, joinRoom, leaveRoom, sendMessage, startTyping, stopTyping, onMessage, onTyping, onPresenceUpdate, onRoomCreated, onRoomDeleted, onChannelCreated };
+  return { 
+    isConnected, 
+    joinRoom, 
+    leaveRoom, 
+    sendMessage, 
+    startTyping, 
+    stopTyping, 
+    addReaction,
+    removeReaction,
+    onMessage, 
+    onReactionUpdate,
+    onTyping, 
+    onPresenceUpdate, 
+    onRoomCreated, 
+    onRoomDeleted, 
+    onChannelCreated 
+  };
 };

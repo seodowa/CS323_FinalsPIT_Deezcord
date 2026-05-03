@@ -7,6 +7,27 @@ export interface Message {
   content: string;
   created_at: string;
   avatar_url?: string | null;
+  reactions?: MessageReaction[];
+}
+
+export interface MessageReaction {
+  id: string;
+  message_id: string;
+  user_id: string;
+  emoji: string;
+  username?: string;
+}
+
+export interface ReactionPayload {
+  message_id: string;
+  channel_id: string;
+  room_id: string;
+  emoji: string;
+}
+
+export interface ReactionUpdatePayload {
+  message_id: string;
+  reactions: MessageReaction[];
 }
 
 export interface SendMessagePayload {
@@ -24,4 +45,5 @@ export interface ReceiveMessagePayload {
   content: string;
   created_at: string;
   avatar_url?: string | null;
+  reactions?: MessageReaction[];
 }
