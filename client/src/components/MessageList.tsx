@@ -13,7 +13,8 @@ interface MessageListProps {
   isLoadingMessages?: boolean;
   onToggleReaction?: (messageId: string, emoji: string) => void;
   onDeleteMessage?: (messageId: string) => void;
-  onReply?: (message: Message) => void;
+  onReplyMessage?: (message: Message) => void;
+  onUserClick?: (user: { id: string; username: string; avatar_url?: string | null }) => void;
 }
 
 const COMMON_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥', '👏', '💯'];
@@ -23,10 +24,11 @@ export default function MessageList({
   members = [], 
   currentUser, 
   typingUsers = [],
-  isLoadingMessages,
+  isLoadingMessages = false,
   onToggleReaction,
   onDeleteMessage,
-  onReply
+  onReplyMessage,
+  onUserClick
 }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activePickerId, setActivePickerId] = useState<string | null>(null);
@@ -130,10 +132,17 @@ export default function MessageList({
                 className={`flex gap-3 relative group ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}
               >
                 {/* Avatar */}
-                <div className="flex-shrink-0 mt-1">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-xs shadow-sm overflow-hidden border border-white/10 ${
-                    isOwn ? 'bg-blue-600' : 'bg-slate-500'
-                  }`}>
+                <div className="flex-shrink-0 mt-auto">
+                  <div 
+                    onClick={() => {
+                      if (onUserClick && msg.user_id) {
+                        onUserClick({ id: msg.user_id, username: displayName, avatar_url: avatarUrl });
+                      }
+                    }}
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-xs shadow-sm overflow-hidden border border-white/10 ${
+                      onUserClick && msg.user_id ? 'cursor-pointer hover:scale-105 transition-transform' : ''
+                    } ${isOwn ? 'bg-blue-600' : 'bg-slate-500'}`}
+                  >
                     {avatarUrl ? (
                       <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
                     ) : (
@@ -224,11 +233,11 @@ export default function MessageList({
                     <div className={`absolute top-0.75 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 ${
                       isOwn ? (onDeleteMessage ? '-left-[6.75rem]' : '-left-20') : '-right-20'
                     }`}>
-                      {onReply && (
+                      {onReplyMessage && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            onReply(msg);
+                            onReplyMessage(msg);
                           }}
                           className="w-8 h-8 flex items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-white/10 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
                           title="Reply"

@@ -2,8 +2,10 @@ import { useState, useRef } from 'react';
 import type { Room, Member } from '../types/room';
 import AsyncButton from './AsyncButton';
 import Modal from './Modal';
+import MemberProfileModal from './MemberProfileModal';
 import { useToast } from '../hooks/useToast';
 import { updateRoom, addMember, kickMember, leaveRoom, deleteRoom } from '../services/roomService';
+import { useAuth } from '../hooks/useAuth';
 
 interface RoomSettingsProps {
   room: Room;
@@ -14,6 +16,7 @@ interface RoomSettingsProps {
 }
 
 export default function RoomSettings({ room, members, onRoomUpdate, onMemberChange, onLeave }: RoomSettingsProps) {
+  const { user } = useAuth();
   const [roomName, setRoomName] = useState(room.name);
   const [inviteEmail, setInviteEmail] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -26,6 +29,9 @@ export default function RoomSettings({ room, members, onRoomUpdate, onMemberChan
   const [kickingId, setKickingId] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<'delete_room' | 'leave_room' | 'kick_member' | null>(null);
   const [targetMember, setTargetMember] = useState<{ id: string; username: string } | null>(null);
+
+  const [selectedProfile, setSelectedProfile] = useState<{ id: string; username: string; avatar_url?: string | null } | null>(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { addToast } = useToast();
@@ -223,7 +229,20 @@ export default function RoomSettings({ room, members, onRoomUpdate, onMemberChan
                   if (!profile) return null;
 
                   return (
-                    <div key={member.user_id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/50 dark:border-white/5 transition-all hover:shadow-sm">
+                    <div 
+                      key={member.user_id} 
+                      className={`flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/50 dark:border-white/5 transition-all hover:shadow-sm ${member.user_id !== user?.id ? 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900/50' : ''}`}
+                      onClick={() => {
+                        if (member.user_id !== user?.id) {
+                          setSelectedProfile({
+                            id: member.user_id,
+                            username: profile.username || 'Unknown User',
+                            avatar_url: profile.avatar_url
+                          });
+                          setIsProfileModalOpen(true);
+                        }
+                      }}
+                    >
                       <div className="flex items-center gap-4 min-w-0">
                         <div className="relative">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-sm flex-shrink-0 overflow-hidden">
@@ -251,7 +270,8 @@ export default function RoomSettings({ room, members, onRoomUpdate, onMemberChan
                       
                       {isOwner && member.role !== 'owner' && (
                         <button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setTargetMember({ id: member.user_id, username: profile.username || 'this user' });
                             setConfirmAction('kick_member');
                           }}
@@ -458,6 +478,13 @@ export default function RoomSettings({ room, members, onRoomUpdate, onMemberChan
           </p>
         </div>
       </Modal>
+
+      {/* Member Profile Modal */}
+      <MemberProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        user={selectedProfile}
+      />
 
     </div>
   );
