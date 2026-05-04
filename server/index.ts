@@ -81,6 +81,8 @@ io.on('connection', (socket: AuthenticatedSocket) => {
     if (isFirstConnection) {
       io.emit('presence_update', { userId, status: 'online' });
     }
+    // Join a personal room to receive direct events (like friend requests)
+    socket.join(userId);
   }
 
   // We now know exactly who this is!
@@ -154,6 +156,22 @@ io.on('connection', (socket: AuthenticatedSocket) => {
         .eq('id', userId)
         .single();
 
+      // Fetch parent message if exists for broadcasting
+      let parentMessage = null;
+      if (data.parent_id) {
+        const { data: parent } = await supabase
+          .from('messages')
+          .select('username, content')
+          .eq('id', data.parent_id)
+          .single();
+        if (parent) {
+          parentMessage = {
+            username: parent.username,
+            content: parent.content
+          };
+        }
+      }
+
       const { data: insertedData, error } = await supabase
         .from('messages')
         .insert([{ 
@@ -163,7 +181,8 @@ io.on('connection', (socket: AuthenticatedSocket) => {
           username: profile?.username || senderName, // Still store username for legacy/snapshot purposes
           content: data.content,
           file_url: data.file_url, // Store optional file URL
-          file_name: data.file_name // Store optional file name
+          file_name: data.file_name, // Store optional file name
+          parent_id: data.parent_id // Store parent_id for replies
         }])
         .select()
         .single();
@@ -181,7 +200,9 @@ io.on('connection', (socket: AuthenticatedSocket) => {
           created_at: insertedData.created_at,
           avatar_url: profile?.avatar_url,
           file_url: data.file_url,
-          file_name: data.file_name
+          file_name: data.file_name,
+          parent_id: data.parent_id,
+          parent_message: parentMessage
       };
 
       io.to(`channel:${data.channel_id}`).emit('receive_message', broadcastData);
