@@ -1,76 +1,58 @@
-# Plan: Implement Discord-like Channel Architecture (COMPLETED)
+# Impeccable Design Brief: Reusable Modal Component
 
-## Background & Motivation
-Currently, messages in Deezcord are tied directly to a `room` (which acts like a Discord server/guild). To match Discord's functionality, we need to allow multiple text channels within a single room so users can categorize their conversations (e.g., `#general`, `#announcements`, `#random`).
+`IMPECCABLE_PREFLIGHT: context=pass product=pass command_reference=pass shape=pass image_gate=skipped:plan-mode mutation=open`
 
-## Scope & Impact
-- **Documentation:** The first step of implementation will be copying this plan into `plan.md` and the database migration plan into `migration_plan.md` in the project root directory.
-- **Database:** Supabase schema updates as detailed in `migration_plan.md`.
-- **Backend (`server/`):** New REST endpoints for channel management, updated message endpoints, and revised Socket.io logic.
-- **Frontend (`client/`):** UI updates to the Sidebar to display channels, Chat area updates to fetch/send messages by channel.
+## 1. Feature Summary
+A highly reusable, modular Modal component that serves as the foundation for all overlays in Deezcord (e.g., confirmations, forms, settings). It consolidates disparate modal logic into a single, robust, and accessible "Unified Glass" surface.
 
-## Proposed Solution
+## 2. Primary User Action
+Focus entirely on the presented task (e.g., confirming an action, filling a form) without losing the context of the underlying application, and either complete or dismiss it effortlessly.
 
-### 0. Documentation Update
-- **Update `plan.md`**: Copy this approved plan into the project root's `plan.md`.
-- **Update `migration_plan.md`**: Copy the database migration details into the project root's `migration_plan.md`.
+## 3. Design Direction
+- **Color Strategy:** Restrained. Neutral glass backgrounds with the brand's Electric Blue (`#3b82f6`) reserved strictly for primary actions.
+- **Theme via Scene:** A user focused on a critical interruption, viewing a sharp, elevated glass panel that softly blurs out the chat behind it, maintaining spatial awareness while enforcing focus.
+- **Anchor References:** Apple visionOS glass overlays, Linear's command menus.
 
-### 1. Database Schema Changes
-Execute the SQL detailed in `migration_plan.md`:
-- Create `channels` table with RLS policies.
-- Backfill `channels` with a `#general` channel for each existing room.
-- Add `channel_id` to `messages` and backfill existing messages.
+## 4. Scope
+- **Fidelity:** Production-ready shipped component.
+- **Breadth:** A core UI primitive replacing `CreateRoomModal` and `UserProfileModal`, and acting as the base for future alerts.
+- **Interactivity:** Smooth entry/exit animations, keyboard accessibility (Escape to close, focus trapping), and async loading states.
 
-### 2. Backend Updates (`server/`)
-- **REST API (`routes/roomRoutes.ts`)**:
-  - `GET /rooms/:roomId/channels`
-  - `POST /rooms/:roomId/channels`
-  - Update `GET /rooms/:roomId/messages` to `GET /channels/:channelId/messages`.
-- **WebSockets (`index.ts`)**:
-  - Update `join_room` to use `channel:${channelId}` instead of `room:${roomId}`.
-  - Route `send_message` to the appropriate channel.
+## 5. Layout Strategy
+- **Container:** Centered on screen, constrained max-width (`max-w-md` to `max-w-2xl` depending on variant), large border radius (`rounded-[2.5rem]` or `rounded-3xl` matching DESIGN.md).
+- **Structure:** 
+  - **Header:** Sticky top, contains title, optional subtitle, and a circular close button.
+  - **Body:** Scrollable (`overflow-y-auto`) area for dynamic content.
+  - **Footer:** Sticky bottom, right-aligned action buttons (Cancel, Confirm) with a subtle contrasting background (`bg-slate-50/30 dark:bg-black/10`).
 
-### 3. Frontend Updates (`client/`)
-- **Types (`client/src/types/`)**:
-  - Add `Channel` interface. Update `Message` and `SendMessagePayload` to use `channel_id`.
-- **UI Components**:
-  - `Sidebar.tsx`: Show channels.
-  - `MessageList.tsx` & `MessageInput.tsx`: Tie logic to `channel_id`.
+## 6. Key States
+- **Entry:** Backdrop fades in (`animate-fade-in`), modal slides up and scales in (`animate-fade-in-up`).
+- **Loading:** Action buttons disable, primary button shows an animated spinner; backdrop clicks and Escape key are ignored.
+- **Edge Cases:** Content exceeding viewport height triggers internal scrolling without moving the header or footer.
 
-## Verification
-- Create a new room; verify it automatically gets a `#general` channel.
-- Create a new channel in the room.
-- Send messages in `#general` and the new channel; verify they do not overlap.
-- Reload the app and verify message history is fetched correctly per channel.
+## 7. Interaction Model
+- Click outside the modal container to dismiss (if not loading/dirty).
+- Press `Escape` to dismiss.
+- Focus is trapped within the modal while open.
+- Primary button provides hover scale and shadow (`hover:-translate-y-[2px] hover:shadow-[...]`) as defined in DESIGN.md.
 
----
+## 8. Content Requirements (Props API)
+- `isOpen` (boolean): Controls visibility.
+- `onClose` (function): Dismiss handler.
+- `title` (string): Primary heading.
+- `description` (string, optional): Secondary context.
+- `children` (ReactNode): The main content payload.
+- `footer` (ReactNode, optional): Custom actions, defaults to none if omitted.
+- `maxWidth` (string, optional): Tailwind max-width class (e.g., `max-w-md`, `max-w-lg`).
+- `isLoading` (boolean, optional): Disables closing mechanisms during async operations.
 
-# Plan: Real-time Room & Channel Creation Updates
+## 9. Recommended References
+- `reference/spatial-design.md` (for z-index and elevation).
+- `reference/motion-design.md` (for the entry/exit easing curves).
 
-## Background & Motivation
-Currently, users must manually refresh to see newly created rooms in the Discovery tab, or newly created channels in their current room. We need to push these updates in real-time via Socket.io to ensure a seamless, "live" feel to the application that matches the Unified Glass aesthetic.
-
-## Scope & Impact
-- **Backend (`server/`)**: Expose the Socket.io instance to Express routes. Emit `room_created` on new room creation and `channel_created` on new channel creation.
-- **Frontend (`client/`)**: Update socket hooks to listen for these events. Update local state for `discoverRooms` and `channels` to react to these events. Introduce "Impeccable" UI micro-animations for incoming items.
-
-## Proposed Solution
-
-### 1. Backend Updates (`server/`)
-- **`server/index.ts`**: Attach the Socket.io `io` instance to the Express app using `app.set('io', io)`.
-- **`server/routes/roomRoutes.ts`**:
-  - In `POST /rooms` (create room): Retrieve `req.app.get('io')` and emit a global `room_created` event with the new room data.
-  - In `POST /rooms/:roomId/channels` (create channel): Retrieve `req.app.get('io')` and emit a `channel_created` event specifically to the users currently viewing the room using `io.to(roomId).emit(...)`.
-
-### 2. Frontend Updates (`client/`) - "Impeccable UI"
-- **`client/src/hooks/useSocket.ts`**: Add typed event listeners for `room_created` and `channel_created`.
-- **`client/src/hooks/useRooms.ts`**: Subscribe to `room_created`. If the newly created room is not authored by the current user, insert it into the `discoverRooms` state dynamically.
-- **`client/src/pages/Home.tsx`**: Subscribe to `channel_created`. If the `channel.room_id` matches the active `currentRoom.id`, append it to the `channels` list.
-- **Micro-Interactions (Impeccable Skill)**:
-  - **Sidebar Channels**: Wrap the channel list in an animation presence handler (or use simple CSS transitions). When a new channel appears, it should expand its height from 0 to full and fade in (`animate-fade-in-up`), avoiding jarring layout shifts. We can add a brief subtle highlight (e.g., a faint indigo flash) to draw the user's eye to the new channel.
-  - **Discovery Rooms**: Similar grid entry animations. When a new room card is added to the discovery grid, it should pop in smoothly rather than instantly appearing.
-
-## Verification
-- User A creates a new room. User B (on the Discovery tab) sees the room appear instantly with a smooth animation.
-- User A creates a new channel in "Room X". User B (currently viewing "Room X") sees the new channel smoothly slide into their sidebar.
-- Ensure the server correctly targets only the users in "Room X" when emitting the channel creation event.
+## 10. Migration Plan
+0. Copy this design brief to overwrite the `plan.md` in the root of the project directory.
+1. Implement `src/components/Modal.tsx`.
+2. Refactor `CreateRoomModal.tsx` to use the new `<Modal>` wrapper.
+3. Refactor `UserProfileModal.tsx` to use the new `<Modal>` wrapper.
+4. Verify all animations, scroll behaviors, and responsive constraints across both refactored modals.
